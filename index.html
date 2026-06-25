@@ -1,0 +1,2410 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任务跟踪看板</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f7fa;--card:#fff;--text:#2c3e50;--text2:#7f8c8d;--border:#e3e8ee;
+  --doing:#3498db;--wait:#f39c12;--done:#27ae60;--cancel:#95a5a6;--overdue:#e74c3c;
+  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow2:0 4px 16px rgba(0,0,0,.12);
+  --radius:8px;
+}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:14px}
+::-webkit-scrollbar{height:8px;width:8px}
+::-webkit-scrollbar-thumb{background:#c8d0da;border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ===== 顶部统计 ===== */
+.stats-bar{display:flex;gap:10px;padding:12px 16px;background:var(--card);box-shadow:var(--shadow);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;align-items:center;min-width:78px;padding:6px 10px;border-radius:var(--radius);background:#f8fafc;border:1px solid var(--border)}
+.stat .num{font-size:22px;font-weight:700;line-height:1.1}
+.stat .lbl{font-size:11px;color:var(--text2);margin-top:2px}
+.stat.doing .num{color:var(--doing)}
+.stat.wait .num{color:var(--wait)}
+.stat.done .num{color:var(--done)}
+.stat.cancel .num{color:var(--cancel)}
+.stat.overdue .num{color:var(--overdue)}
+.stat.cost{background:linear-gradient(135deg,#e8f8f5,#d4f1ea);border-color:#a3e4d3}
+.stat.cost .num{color:#00936b}
+
+/* ===== 工具栏 ===== */
+.toolbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:62px;z-index:19}
+.toolbar .search{flex:1;min-width:200px;position:relative}
+.toolbar .search input{width:100%;padding:7px 12px 7px 30px;border:1px solid var(--border);border-radius:6px;background:#fafbfc}
+.toolbar .search input:focus{outline:none;border-color:var(--doing);background:#fff}
+.toolbar .search::before{content:"🔍";position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.5}
+.select{padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:#fafbfc;color:var(--text)}
+.select:focus{outline:none;border-color:var(--doing)}
+.btn{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600;border:1px solid var(--border);background:#fff;transition:.15s}
+.btn:hover{background:#f0f3f7}
+.btn-primary{background:var(--doing);color:#fff;border-color:var(--doing)}
+.btn-primary:hover{background:#2980b9}
+.btn-save{background:var(--done);color:#fff;border-color:var(--done)}
+.btn-save:hover{background:#229954}
+.btn-danger{color:var(--overdue)}
+.btn-danger:hover{background:#fdecea}
+.dirty-indicator{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);padding:0 6px}
+.dirty-indicator.dirty{color:var(--overdue)}
+.dirty-indicator.dirty .dot{background:var(--overdue);animation:pulse 1.2s infinite}
+.dirty-indicator .dot{width:8px;height:8px;border-radius:50%;background:#bbb}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ===== 时间线 ===== */
+.timeline-wrap{padding:8px 16px;background:#eef2f7;border-bottom:1px solid var(--border)}
+.timeline-label{font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600}
+.timeline{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.tl-item{flex:0 0 auto;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--doing);border-radius:6px;padding:5px 10px;max-width:240px;cursor:pointer;transition:.15s}
+.tl-item:hover{box-shadow:var(--shadow2);transform:translateY(-1px)}
+.tl-item .tl-date{font-size:11px;color:var(--text2);font-weight:600}
+.tl-item .tl-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-item .tl-note{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline-empty{font-size:12px;color:var(--text2);padding:8px 0}
+
+/* ===== 看板 ===== */
+.kanban{display:flex;gap:12px;padding:14px 16px;align-items:flex-start;min-height:calc(100vh - 200px)}
+.column{flex:1;min-width:260px;background:#eef2f7;border-radius:var(--radius);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
+.column.collapsed .col-body{display:none}
+.col-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;user-select:none;position:sticky;top:0;z-index:5}
+.col-head .col-title{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
+.col-head .col-badge{background:#fff;border:1px solid var(--border);border-radius:10px;padding:0 7px;font-size:11px;color:var(--text2);min-width:20px;text-align:center}
+.col-head .col-toggle{font-size:10px;color:var(--text2)}
+.col-doing{border-top:3px solid var(--doing)}
+.col-wait{border-top:3px solid var(--wait)}
+.col-done{border-top:3px solid var(--done)}
+.col-cancel{border-top:3px solid var(--cancel)}
+.col-body{padding:4px 8px 10px;overflow-y:auto;flex:1}
+.col-body.drop-active{background:#e3eaf2;outline:2px dashed var(--doing);outline-offset:-4px}
+.cards-empty{text-align:center;color:var(--text2);font-size:12px;padding:24px 8px}
+
+/* ===== 卡片 ===== */
+.card{background:var(--card);border-radius:6px;padding:9px 11px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;border-left:4px solid #ccc;transition:.12s;position:relative}
+.card:hover{box-shadow:var(--shadow2);transform:translateY(-1px)}
+.card.flash{animation:flash 1.6s}
+@keyframes flash{0%,100%{box-shadow:var(--shadow)}30%,70%{box-shadow:0 0 0 3px var(--doing)}}
+.card.overdue{border:1px solid var(--overdue);border-left:4px solid var(--overdue)}
+.card-overdue-badge{position:absolute;top:6px;right:8px;background:var(--overdue);color:#fff;font-size:10px;padding:1px 5px;border-radius:8px;font-weight:600}
+.card-title{font-weight:600;font-size:13px;margin-bottom:4px;padding-right:60px;line-height:1.35}
+.card-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text2);margin-bottom:5px}
+.card-meta .tag{background:#eef2f7;padding:1px 6px;border-radius:3px}
+.card-meta .req{color:var(--overdue);font-weight:600}
+.card-note{font-size:11px;color:#5a6b7b;background:#f8fafc;padding:5px 7px;border-radius:4px;line-height:1.45;max-height:54px;overflow:hidden;position:relative}
+.card-note .note-date{font-weight:600;color:var(--text2)}
+.card-note::after{content:"";position:absolute;bottom:0;left:0;right:0;height:14px;background:linear-gradient(transparent,#f8fafc)}
+.type-bar{width:4px}
+
+/* ===== 弹窗 ===== */
+.modal-mask{position:fixed;inset:0;background:rgba(20,30,45,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-mask.hidden{display:none}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,.25)}
+.modal-summary{max-width:900px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.modal-head h3{font-size:16px}
+.modal-close{font-size:20px;color:var(--text2);width:30px;height:30px;border-radius:50%}
+.modal-close:hover{background:#f0f3f7}
+.modal-body{padding:16px 18px}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border);position:sticky;bottom:0;background:#fff}
+
+/* 表单 */
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:12px;color:var(--text2);font-weight:600;margin-bottom:4px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:#fff}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--doing)}
+.form-row textarea{resize:vertical;min-height:60px}
+.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.cost-row{display:none}
+.cost-row.show{display:grid}
+
+/* 备注时间线 */
+.notes-section{margin-top:16px}
+.notes-section h4{font-size:13px;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.notes-list{max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:#fafbfc}
+.note-item{display:flex;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border)}
+.note-item:last-child{border-bottom:none}
+.note-item .note-date-col{flex:0 0 90px;font-size:11px;color:var(--text2);font-weight:600;padding-top:1px}
+.note-item .note-text-col{flex:1;font-size:12px;white-space:pre-wrap;word-break:break-word;line-height:1.5}
+.note-item .note-del{flex:0 0 auto;color:var(--overdue);font-size:11px;opacity:0;transition:.15s}
+.note-item:hover .note-del{opacity:1}
+.note-item .note-del:hover{text-decoration:underline}
+.notes-empty{text-align:center;color:var(--text2);font-size:12px;padding:16px}
+.append-row{display:flex;gap:8px;margin-top:10px;align-items:flex-start}
+.append-row input[type=date]{flex:0 0 150px}
+.append-row textarea{flex:1;min-height:48px}
+.append-row .btn{flex:0 0 auto}
+
+/* 汇总 */
+.summary-controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.summary-controls label{font-size:12px;color:var(--text2)}
+.summary-totals{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.summary-total{flex:1;min-width:120px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.summary-total .n{font-size:24px;font-weight:700;color:var(--doing)}
+.summary-total.cost .n{color:#00936b}
+.summary-total .t{font-size:11px;color:var(--text2);margin-top:2px}
+.summary-group{margin-bottom:14px}
+.summary-group h5{font-size:12px;color:var(--text2);margin-bottom:6px;padding-bottom:4px;border-bottom:1px dashed var(--border)}
+.summary-item{font-size:12px;padding:4px 0;display:flex;justify-content:space-between;gap:8px}
+.summary-item .si-title{flex:1}
+.summary-item .si-date{color:var(--text2);font-size:11px;flex:0 0 auto}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#2c3e50;color:#fff;padding:12px 20px;border-radius:8px;box-shadow:var(--shadow2);z-index:200;font-size:13px;max-width:360px;transform:translateY(20px);opacity:0;transition:.3s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--done)}
+.toast.error{background:var(--overdue)}
+
+/* 恢复提示条 */
+.recover-bar{position:fixed;top:0;left:0;right:0;background:#fff3cd;border-bottom:1px solid #ffe082;padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:14px;z-index:300;font-size:13px}
+.recover-bar button{font-weight:600}
+
+@media(max-width:900px){
+  .kanban{flex-direction:column}
+  .column{max-height:none}
+  .toolbar{top:auto;position:relative}
+  .stats-bar{position:relative}
+}
+@media print{
+  .stats-bar,.toolbar,.timeline-wrap,.kanban,.modal-mask{display:none!important}
+  .modal-mask{position:static;background:none;display:block!important;padding:0}
+  .modal{box-shadow:none;max-width:100%;max-height:none;border:none}
+  .modal-head,.modal-foot{position:static}
+}
+</style>
+</head>
+<body>
+
+<div class="stats-bar" id="statsBar"><div class="stat doing"><span class="num">15</span><span class="lbl">进行中</span></div><div class="stat wait"><span class="num">2</span><span class="lbl">暂待</span></div><div class="stat done"><span class="num">32</span><span class="lbl">已完结</span></div><div class="stat cancel"><span class="num">6</span><span class="lbl">取消</span></div><div class="stat overdue"><span class="num">0</span><span class="lbl">逾期</span></div><div class="stat cost"><span class="num">137.0</span><span class="lbl">降本年省(万)</span></div><div class="stat"><span class="num">55</span><span class="lbl">总计</span></div></div>
+<div class="toolbar" id="toolbar" style="top: 80px;">
+  <div class="search"><input type="text" id="searchInput" placeholder="搜索事项或进度备注…"></div>
+  <select class="select" id="typeFilter"><option value="">全部类型</option><option value="新品-日常">新品-日常</option><option value="新品-重点关注">新品-重点关注</option><option value="降本">降本</option><option value="其他-日常">其他-日常</option><option value="其他-重点关注">其他-重点关注</option><option value="保供-材料波动">保供-材料波动</option><option value="新品-日常">新品-日常</option><option value="新品-重点关注">新品-重点关注</option><option value="降本">降本</option><option value="其他-日常">其他-日常</option><option value="其他-重点关注">其他-重点关注</option><option value="保供-材料波动">保供-材料波动</option></select>
+  <select class="select" id="statusFilter">
+    <option value="">全部状态</option>
+    <option value="进行中">进行中</option>
+    <option value="暂待">暂待</option>
+    <option value="已完结">已完结</option>
+    <option value="取消">取消</option>
+  </select>
+  <button class="btn" id="clearFilterBtn">清空</button>
+  <span class="dirty-indicator dirty" id="dirtyIndicator"><span class="dot"></span><span id="dirtyText">未保存</span></span>
+  <button class="btn" id="summaryBtn">汇总</button>
+  <button class="btn" id="importBtn">导入CSV</button>
+  <button class="btn" id="newBtn">＋新建</button>
+  <button class="btn btn-save" id="saveBtn">💾 保存</button>
+  <input type="file" id="csvFile" accept=".csv" style="display:none">
+</div>
+<div class="timeline-wrap">
+  <div class="timeline-label">最近更新</div>
+  <div class="timeline" id="timeline"><div class="tl-item" data-jump="t_54" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">浮雕板二供</div><div class="tl-note">重新切了重新干</div></div><div class="tl-item" data-jump="t_33" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">门锁锌改铝</div><div class="tl-note">一体锁报价的时候也会同步报一下，看看差距，看看具体产品</div></div><div class="tl-item" data-jump="t_41" style="border-left-color:#6c5ce7"><div class="tl-date">26-06-21</div><div class="tl-title">舍凡膨胀螺丝二供</div><div class="tl-note">暂时不管了，</div></div><div class="tl-item" data-jump="t_22" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">螺丝整体比价</div><div class="tl-note">史苗福测过了还行，韩意思是安排200套给直营店测试，过了就直…</div></div><div class="tl-item" data-jump="t_13" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">准分子直采</div><div class="tl-note">追进度，说是要7月初</div></div><div class="tl-item" data-jump="t_12" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">密度板直采</div><div class="tl-note">和曹阳沟通，统计了一下，考虑是否要把零散的都切给佳诺威</div></div><div class="tl-item" data-jump="t_53" style="border-left-color:#fdcb6e"><div class="tl-date">26-06-21</div><div class="tl-title">三威喷粉板涨价</div><div class="tl-note">又来追了，问下领导</div></div><div class="tl-item" data-jump="t_52" style="border-left-color:#b2bec3"><div class="tl-date">26-06-21</div><div class="tl-title">富胜合同修改</div><div class="tl-note">先扛一下，供应商担保发货，阶段性付款</div></div><div class="tl-item" data-jump="t_51" style="border-left-color:#b2bec3"><div class="tl-date">26-06-21</div><div class="tl-title">美标物料是否取消</div><div class="tl-note">查了没有BOM，甘泉说胡志鹏通知的，只用一次，后面都用零售物…</div></div><div class="tl-item" data-jump="t_39" style="border-left-color:#b2bec3"><div class="tl-date">26-06-21</div><div class="tl-title">高林质保金</div><div class="tl-note">再次沟通，要到31年2月才能退，供方表示要走法律途径，已通告…</div></div><div class="tl-item" data-jump="t_55" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">三合一摸排</div><div class="tl-note">可以拿到成本分析，对照着看一下细节，同步拿到实物样品</div></div><div class="tl-item" data-jump="t_21" style="border-left-color:#74b9ff"><div class="tl-date">26-06-18</div><div class="tl-title">江南新花色-高光雪域金</div><div class="tl-note">又来了，调整完了，已交接至忠皓测试</div></div><div class="tl-item" data-jump="t_49" style="border-left-color:#0984e3"><div class="tl-date">26-06-16</div><div class="tl-title">慧鱼螺丝</div><div class="tl-note">节后出价格，已在同步画图设计</div></div><div class="tl-item" data-jump="t_19" style="border-left-color:#b2bec3"><div class="tl-date">26-06-12</div><div class="tl-title">苏世博封样不对+谈价</div><div class="tl-note">已完结</div></div><div class="tl-item" data-jump="t_46" style="border-left-color:#00b894"><div class="tl-date">26-06-12</div><div class="tl-title">密度板谈价</div><div class="tl-note">又谈了一下，最低能到1670，</div></div><div class="tl-item" data-jump="t_50" style="border-left-color:#74b9ff"><div class="tl-date">26-06-11</div><div class="tl-title">影木新增-门+护墙</div><div class="tl-note">影木需要新增素板和封边条</div></div><div class="tl-item" data-jump="t_26" style="border-left-color:#74b9ff"><div class="tl-date">26-06-09</div><div class="tl-title">舍凡富盛升降机</div><div class="tl-note">交接给廷廷</div></div><div class="tl-item" data-jump="t_27" style="border-left-color:#74b9ff"><div class="tl-date">26-06-09</div><div class="tl-title">舍凡富盛双向抽</div><div class="tl-note">交接给廷廷</div></div><div class="tl-item" data-jump="t_42" style="border-left-color:#00b894"><div class="tl-date">26-06-06</div><div class="tl-title">凯里一体锁直降</div><div class="tl-note">已完成，平均降幅9.56%，年化省本约18.5w</div></div><div class="tl-item" data-jump="t_11" style="border-left-color:#b2bec3"><div class="tl-date">26-06-01</div><div class="tl-title">准分子新开一家（金东亚？）</div><div class="tl-note">和领导汇报过了，领导意思是我们订单喂不饱金东亚，卡模质量也不…</div></div></div>
+</div>
+<main class="kanban" id="kanban"><div class="column col-doing " data-status="进行中"><div class="col-head" data-toggle="进行中"><span class="col-title">进行中<span class="col-badge">15</span></span><span class="col-toggle">▼</span></div><div class="col-body" data-drop="进行中"><div class="card" draggable="true" data-id="t_7" style="border-left-color:#00b894"><div class="card-title">名门隐形合页-换款替换降本</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-05-28 </span>测试ing，预计6月20日</div></div><div class="card" draggable="true" data-id="t_8" style="border-left-color:#00b894"><div class="card-title">名门隐形合页-凯里替代方案</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省28万</span></div><div class="card-note"><span class="note-date">26-05-28 </span>测试ing，预计6月20日</div></div><div class="card" draggable="true" data-id="t_11" style="border-left-color:#b2bec3"><div class="card-title">准分子新开一家（金东亚？）</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-06-01 </span>和领导汇报过了，领导意思是我们订单喂不饱金东亚，卡模质量也不行，项目可以暂时搁置。但曹阳和我的想法是再试一下卡模。给了卡模和金东亚都在打样中了</div></div><div class="card" draggable="true" data-id="t_12" style="border-left-color:#00b894"><div class="card-title">密度板直采</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省4.5万</span></div><div class="card-note"><span class="note-date">26-06-09 </span>和曹阳沟通，统计了一下，考虑是否要把零散的都切给佳诺威</div></div><div class="card" draggable="true" data-id="t_13" style="border-left-color:#00b894"><div class="card-title">准分子直采</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省42万</span></div><div class="card-note"><span class="note-date">26-06-18 </span>追进度，说是要7月初</div></div><div class="card" draggable="true" data-id="t_21" style="border-left-color:#74b9ff"><div class="card-title">江南新花色-高光雪域金</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-06-18 </span>又来了，调整完了，已交接至忠皓测试</div></div><div class="card" draggable="true" data-id="t_22" style="border-left-color:#00b894"><div class="card-title">螺丝整体比价</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省26.58万</span></div><div class="card-note"><span class="note-date">26-06-08 </span>史苗福测过了还行，韩意思是安排200套给直营店测试，过了就直接签。开模中，月底提供</div></div><div class="card" draggable="true" data-id="t_32" style="border-left-color:#b2bec3"><div class="card-title">双马质保金退回</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-22 </span>已提交，退回了，等新抬头质保金提交之后再整</div></div><div class="card" draggable="true" data-id="t_43" style="border-left-color:#00b894"><div class="card-title">凯里一体锁和兆高合页二供</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-05-28 </span>一体锁方面名门的锌合金报价没有优势且外观差异很大估计是直接pass了；铝合金有优势，但外观也有区别，而且打样的话还得调色，尺寸也不一样。先让他来一个铝合金的外观…</div></div><div class="card" draggable="true" data-id="t_46" style="border-left-color:#00b894"><div class="card-title">密度板谈价</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-06-12 </span>又谈了一下，最低能到1670，</div></div><div class="card" draggable="true" data-id="t_47" style="border-left-color:#00b894"><div class="card-title">E0货源变更为E1</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-05-20 </span>变更期间添加为E0的货源要改回来
+暂时不动了，又有可能要改E0</div></div><div class="card" draggable="true" data-id="t_49" style="border-left-color:#0984e3"><div class="card-title">慧鱼螺丝</div><div class="card-meta"><span class="tag">新品-重点关注</span></div><div class="card-note"><span class="note-date">26-06-16 </span>节后出价格，已在同步画图设计</div></div><div class="card" draggable="true" data-id="t_50" style="border-left-color:#74b9ff"><div class="card-title">影木新增-门+护墙</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-06-11 </span>影木需要新增素板和封边条</div></div><div class="card" draggable="true" data-id="t_54" style="border-left-color:#00b894"><div class="card-title">浮雕板二供</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省10万</span></div><div class="card-note"><span class="note-date">26-06-01 </span>重新切了重新干</div></div><div class="card" draggable="true" data-id="t_55" style="border-left-color:#00b894"><div class="card-title">三合一摸排</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-06-21 </span>可以拿到成本分析，对照着看一下细节，同步拿到实物样品</div></div></div></div><div class="column col-wait " data-status="暂待"><div class="col-head" data-toggle="暂待"><span class="col-title">暂待<span class="col-badge">2</span></span><span class="col-toggle">▼</span></div><div class="col-body" data-drop="暂待"><div class="card" draggable="true" data-id="t_33" style="border-left-color:#00b894"><div class="card-title">门锁锌改铝</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-05-18 </span>一体锁报价的时候也会同步报一下，看看差距，看看具体产品</div></div><div class="card" draggable="true" data-id="t_41" style="border-left-color:#6c5ce7"><div class="card-title">舍凡膨胀螺丝二供</div><div class="card-meta"><span class="tag">其他-重点关注</span></div><div class="card-note"><span class="note-date">26-06-20 </span>暂时不管了，</div></div></div></div><div class="column col-done " data-status="已完结"><div class="col-head" data-toggle="已完结"><span class="col-title">已完结<span class="col-badge">32</span></span><span class="col-toggle">▼</span></div><div class="col-body" data-drop="已完结"><div class="card" draggable="true" data-id="t_1" style="border-left-color:#74b9ff"><div class="card-title">舜合扫地机器人电动开门器</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-02 </span>完成</div></div><div class="card" draggable="true" data-id="t_2" style="border-left-color:#74b9ff"><div class="card-title">舜合供应商导入</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-05-20 </span>效率是真慢，一天一次，已到供应商盖章</div></div><div class="card" draggable="true" data-id="t_3" style="border-left-color:#74b9ff"><div class="card-title">巴斯供应商导入</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-24 </span>完成了！</div></div><div class="card" draggable="true" data-id="t_4" style="border-left-color:#74b9ff"><div class="card-title">两款UV高光影木(德必隆)</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-05-15 </span>已补签样</div></div><div class="card" draggable="true" data-id="t_5" style="border-left-color:#74b9ff"><div class="card-title">哥尼迪帕诺28厚无力铰链</div><div class="card-meta"><span class="tag">新品-日常</span><span class="tag">要求 26-04-10</span></div><div class="card-note"><span class="note-date">26-04-20 </span>已提交</div></div><div class="card" draggable="true" data-id="t_6" style="border-left-color:#00b894"><div class="card-title">名门隐形合页谈价降本</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省7.4万</span></div><div class="card-note"><span class="note-date">26-04-27 </span>谈不下去，先提交拿到吧，二供测试单开一项</div></div><div class="card" draggable="true" data-id="t_9" style="border-left-color:#00b894"><div class="card-title">兆高合页谈价</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-04-13 </span>新成本分析表已完成，已提交</div></div><div class="card" draggable="true" data-id="t_10" style="border-left-color:#b2bec3"><div class="card-title">海蒂诗风影移门价格错误</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-13 </span>已完成</div></div><div class="card" draggable="true" data-id="t_15" style="border-left-color:#74b9ff"><div class="card-title">阿克德铰链签样</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-16 </span>已交接</div></div><div class="card" draggable="true" data-id="t_16" style="border-left-color:#74b9ff"><div class="card-title">防风地吸</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-30 </span>已签样</div></div><div class="card" draggable="true" data-id="t_17" style="border-left-color:#74b9ff"><div class="card-title">西野红签样</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-08 </span>已签</div></div><div class="card" draggable="true" data-id="t_18" style="border-left-color:#74b9ff"><div class="card-title">莱瑟咖皮纹</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-20 </span>已加</div></div><div class="card" draggable="true" data-id="t_19" style="border-left-color:#b2bec3"><div class="card-title">苏世博封样不对+谈价</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-06-12 </span>已完结</div></div><div class="card" draggable="true" data-id="t_20" style="border-left-color:#74b9ff"><div class="card-title">沉头黑色内六角螺丝4X12</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-14 </span>暂时搁置直接pass</div></div><div class="card" draggable="true" data-id="t_23" style="border-left-color:#74b9ff"><div class="card-title">IF下翻门+平板铰链</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-29 </span>已签样</div></div><div class="card" draggable="true" data-id="t_24" style="border-left-color:#b2bec3"><div class="card-title">隐形、明装合页情况调查</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-14 </span>已提交</div></div><div class="card" draggable="true" data-id="t_25" style="border-left-color:#b2bec3"><div class="card-title">冰山白</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-13 </span>签样都好了</div></div><div class="card" draggable="true" data-id="t_26" style="border-left-color:#74b9ff"><div class="card-title">舍凡富盛升降机</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-06-09 </span>交接给廷廷</div></div><div class="card" draggable="true" data-id="t_27" style="border-left-color:#74b9ff"><div class="card-title">舍凡富盛双向抽</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-06-09 </span>交接给廷廷</div></div><div class="card" draggable="true" data-id="t_28" style="border-left-color:#74b9ff"><div class="card-title">舍凡金盛店用磁铁和支架</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-05-26 </span>已开票，交接给廷廷</div></div><div class="card" draggable="true" data-id="t_29" style="border-left-color:#b2bec3"><div class="card-title">天斯情况沟通</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-13 </span>报价单已拿到，测试结果问苗福
+现在3.05（含盖子）报价2.75+0.3=3.05
+总体差价3.05比3.05，居然一致？
+史苗福反馈问题：
+1、厚门时避让位置…</div></div><div class="card" draggable="true" data-id="t_30" style="border-left-color:#fdcb6e"><div class="card-title">角铁</div><div class="card-meta"><span class="tag">保供-材料波动</span></div><div class="card-note"><span class="note-date">26-04-22 </span>已提交</div></div><div class="card" draggable="true" data-id="t_31" style="border-left-color:#b2bec3"><div class="card-title">海日质保金退回</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-05-09 </span>已完成</div></div><div class="card" draggable="true" data-id="t_34" style="border-left-color:#74b9ff"><div class="card-title">图特折叠门导入</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-21 </span>已提交</div></div><div class="card" draggable="true" data-id="t_35" style="border-left-color:#74b9ff"><div class="card-title">图特幽灵门导入</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-20 </span>流程已提交</div></div><div class="card" draggable="true" data-id="t_36" style="border-left-color:#74b9ff"><div class="card-title">隐形二合一连接件</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-29 </span>已签样</div></div><div class="card" draggable="true" data-id="t_38" style="border-left-color:#74b9ff"><div class="card-title">古铜金层板铝圆管托</div><div class="card-meta"><span class="tag">新品-日常</span><span class="tag">要求 26-04-30</span></div><div class="card-note"><span class="note-date">26-05-09 </span>已提交，图纸待签样</div></div><div class="card" draggable="true" data-id="t_40" style="border-left-color:#74b9ff"><div class="card-title">多扇折叠门配件</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-05-11 </span>已提交</div></div><div class="card" draggable="true" data-id="t_42" style="border-left-color:#00b894"><div class="card-title">凯里一体锁直降</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省18.5万</span></div><div class="card-note"><span class="note-date">26-06-06 </span>已完成，平均降幅9.56%，年化省本约18.5w</div></div><div class="card" draggable="true" data-id="t_44" style="border-left-color:#b2bec3"><div class="card-title">发光穿衣镜新品</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-05-28 </span>完工</div></div><div class="card" draggable="true" data-id="t_45" style="border-left-color:#74b9ff"><div class="card-title">电动收纳五金</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-05-25 </span>已最终比价结束，共计导入33款物料</div></div><div class="card" draggable="true" data-id="t_48" style="border-left-color:#b2bec3"><div class="card-title">方闪需求转运费</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-05-22 </span>已提交，价格为2.58</div></div></div></div><div class="column col-cancel " data-status="取消"><div class="col-head" data-toggle="取消"><span class="col-title">取消<span class="col-badge">6</span></span><span class="col-toggle">▼</span></div><div class="col-body" data-drop="取消"><div class="card" draggable="true" data-id="t_14" style="border-left-color:#6c5ce7"><div class="card-title">E1升级E0</div><div class="card-meta"><span class="tag">其他-重点关注</span></div><div class="card-note"><span class="note-date">26-04-29 </span>最新要求，不改了</div></div><div class="card" draggable="true" data-id="t_37" style="border-left-color:#74b9ff"><div class="card-title">按弹口袋门</div><div class="card-meta"><span class="tag">新品-日常</span><span class="tag">要求 26-04-30</span></div><div class="card-note"><span class="note-date">26-04-27 </span>工艺和研发打架了，取消</div></div><div class="card" draggable="true" data-id="t_39" style="border-left-color:#b2bec3"><div class="card-title">高林质保金</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-05-18 </span>再次沟通，要到31年2月才能退，供方表示要走法律途径，已通告曹阳、语文、陈恺</div></div><div class="card" draggable="true" data-id="t_51" style="border-left-color:#b2bec3"><div class="card-title">美标物料是否取消</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-20 </span>查了没有BOM，甘泉说胡志鹏通知的，只用一次，后面都用零售物料</div></div><div class="card" draggable="true" data-id="t_52" style="border-left-color:#b2bec3"><div class="card-title">富胜合同修改</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-20 </span>先扛一下，供应商担保发货，阶段性付款</div></div><div class="card" draggable="true" data-id="t_53" style="border-left-color:#fdcb6e"><div class="card-title">三威喷粉板涨价</div><div class="card-meta"><span class="tag">保供-材料波动</span></div><div class="card-note"><span class="note-date">26-04-13 </span>又来追了，问下领导</div></div></div></div></main>
+
+<!-- 编辑弹窗 -->
+<div class="modal-mask hidden" id="editModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="editTitle">编辑任务</h3><button class="modal-close" data-close="">×</button></div>
+    <div class="modal-body" id="editBody"><div class="form-row"><label>事项标题 *</label><input id="f_title" value="浮雕板二供" placeholder="任务名称"></div><div class="form-grid3"><div class="form-row"><label>类型</label><select id="f_type"><option value="新品-日常" selected="">新品-日常</option><option value="新品-重点关注">新品-重点关注</option><option value="降本">降本</option><option value="其他-日常">其他-日常</option><option value="其他-重点关注">其他-重点关注</option><option value="保供-材料波动">保供-材料波动</option></select></div><div class="form-row"><label>责任人</label><input id="f_owner" value="周晓源"></div><div class="form-row"><label>状态</label><select id="f_status"><option value="进行中" selected="">进行中</option><option value="暂待">暂待</option><option value="已完结">已完结</option><option value="取消">取消</option></select></div></div><div class="form-grid2"><div class="form-row"><label>提出时间</label><input type="date" id="f_proposed" value="2026-06-01"></div><div class="form-row"><label>要求完成时间</label><input type="date" id="f_required" value=""></div></div><div class="form-grid2 cost-row show" id="costRow"><div class="form-row"><label>年省本(万)</label><input type="number" step="0.1" id="f_cost" value="" placeholder="如 7.4"></div><div class="form-row"><label>降幅(%)</label><input type="number" step="0.1" id="f_reduce" value="" placeholder="如 3.7"></div></div><div class="notes-section"><h4>进度备注 <span style="color:#bbb;font-weight:400">(1)</span></h4><div class="notes-list" id="notesList"><div class="note-item"><div class="note-date-col">2026-06-01</div><div class="note-text-col">重新切了重新干</div><button class="note-del" data-delnote="0">删除</button></div></div><div class="append-row"><input type="date" id="appendDate" value="2026-06-21"><textarea id="appendText" placeholder="追加进度备注…"></textarea><button class="btn btn-primary" id="appendBtn">追加</button></div></div></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="deleteBtn" style="margin-right: auto; display: inline-block;">删除任务</button>
+      <button class="btn" data-close="">取消</button>
+      <button class="btn btn-primary" id="saveTaskBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 汇总弹窗 -->
+<div class="modal-mask hidden" id="summaryModal">
+  <div class="modal modal-summary">
+    <div class="modal-head"><h3>时段汇总</h3><button class="modal-close" data-close="">×</button></div>
+    <div class="modal-body" id="summaryBody"></div>
+    <div class="modal-foot"><button class="btn" id="printBtn">打印</button><button class="btn" data-close="">关闭</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">已保存到内存，记得点右上角「保存」下载文件</div>
+
+<!-- ===== 数据块 ===== -->
+<script type="application/json" id="taskboard-data">
+{
+  "version": "1.0",
+  "lastSavedAt": "2026-06-21T05:12:33.980Z",
+  "source": "工作记录.csv",
+  "typeColors": {
+    "新品-日常": "#74b9ff",
+    "新品-重点关注": "#0984e3",
+    "降本": "#00b894",
+    "其他-日常": "#b2bec3",
+    "其他-重点关注": "#6c5ce7",
+    "保供-材料波动": "#fdcb6e"
+  },
+  "tasks": [
+    {
+      "id": "t_1",
+      "seq": 1,
+      "type": "新品-日常",
+      "title": "舜合扫地机器人电动开门器",
+      "owner": "周晓源",
+      "proposedAt": "2026-03-16",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "完成"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-03-16T00:00:00.000Z",
+      "updatedAt": "2026-04-02T00:00:00.000Z"
+    },
+    {
+      "id": "t_2",
+      "seq": 2,
+      "type": "新品-日常",
+      "title": "舜合供应商导入",
+      "owner": "周晓源",
+      "proposedAt": "2026-03-16",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "SRM已好，合同签写ing(不同意质保金)"
+        },
+        {
+          "date": "2026-04-09",
+          "text": "合同已改好，提SRM审批"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "廷廷处理CA认证ing"
+        },
+        {
+          "date": "2026-04-16",
+          "text": "发SRM合同过去了"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "刚确认。。。提交OA了"
+        },
+        {
+          "date": "2026-05-06",
+          "text": "退了，供应商编码错误，重提"
+        },
+        {
+          "date": "2026-05-20",
+          "text": "效率是真慢，一天一次，已到供应商盖章"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-03-16T00:00:00.000Z",
+      "updatedAt": "2026-05-20T00:00:00.000Z"
+    },
+    {
+      "id": "t_3",
+      "seq": 3,
+      "type": "新品-日常",
+      "title": "巴斯供应商导入",
+      "owner": "周晓源",
+      "proposedAt": "2026-03-16",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-20",
+          "text": "合同终于终于好了！到我们盖章环节了"
+        },
+        {
+          "date": "2026-04-21",
+          "text": "到供应商盖章环节了"
+        },
+        {
+          "date": "2026-04-24",
+          "text": "完成了！"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-03-16T00:00:00.000Z",
+      "updatedAt": "2026-04-24T00:00:00.000Z"
+    },
+    {
+      "id": "t_4",
+      "seq": 4,
+      "type": "新品-日常",
+      "title": "两款UV高光影木(德必隆)",
+      "owner": "周晓源",
+      "proposedAt": "2026-02-04",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "大板已过，跳过首批，已安排直接备货(有邮件)，封边签样ing，大板等后面来货，编码导入ing"
+        },
+        {
+          "date": "2026-04-08",
+          "text": "编码已导入，签样已完成，带封边，只有1块，之后补3块。"
+        },
+        {
+          "date": "2026-04-16",
+          "text": "封边条已签样"
+        },
+        {
+          "date": "2026-05-15",
+          "text": "已补签样"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-05-15T00:00:00.000Z"
+    },
+    {
+      "id": "t_5",
+      "seq": 5,
+      "type": "新品-日常",
+      "title": "哥尼迪帕诺28厚无力铰链",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-02",
+      "requiredAt": "2026-04-10",
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "价格还没出来，估计要节后"
+        },
+        {
+          "date": "2026-04-07",
+          "text": "报价已到，已加编码；另需6个全盖用于测试，各3个用于签样(SMF测试无问题)"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "流程被退了，价格需要重新谈，样品已到"
+        },
+        {
+          "date": "2026-04-20",
+          "text": "已提交"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-02T00:00:00.000Z",
+      "updatedAt": "2026-04-20T00:00:00.000Z"
+    },
+    {
+      "id": "t_6",
+      "seq": 6,
+      "type": "降本",
+      "title": "名门隐形合页谈价降本",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-01",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "已催过，预计下周给回复，并预约下周来拜访"
+        },
+        {
+          "date": "2026-04-09",
+          "text": "价格还没出，成本分析也出不来"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "降3.7%，从54降到52，年采3.7w个，预计年省本7.4w"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "谈不下去，先提交拿到吧，二供测试单开一项"
+        }
+      ],
+      "costSaving": {
+        "annualAmountWan": 7.4,
+        "reductionPercent": 3.7,
+        "rawText": "年省本7.4w | 降3.7%"
+      },
+      "createdAt": "2026-04-01T00:00:00.000Z",
+      "updatedAt": "2026-04-27T00:00:00.000Z"
+    },
+    {
+      "id": "t_7",
+      "seq": 7,
+      "type": "降本",
+      "title": "名门隐形合页-换款替换降本",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-20",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-04-20",
+          "text": "替换3D60C进行测试，51后来样品，与凯里的一起测试"
+        },
+        {
+          "date": "2026-05-09",
+          "text": "已提交测试申请"
+        },
+        {
+          "date": "2026-05-20",
+          "text": "木门安装中"
+        },
+        {
+          "date": "2026-05-28",
+          "text": "测试ing，预计6月20日"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-20T00:00:00.000Z",
+      "updatedAt": "2026-05-28T00:00:00.000Z"
+    },
+    {
+      "id": "t_8",
+      "seq": 8,
+      "type": "降本",
+      "title": "名门隐形合页-凯里替代方案",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-08",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": null,
+          "text": "凯理那边推荐了一款类似的产品，一模一样，但是价格便宜7.5/个，切换的话预计收益28w左右"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "样品已收到，等名门的到了一并测试"
+        },
+        {
+          "date": "2026-05-09",
+          "text": "已提交测试申请"
+        },
+        {
+          "date": "2026-05-20",
+          "text": "木门安装中"
+        },
+        {
+          "date": "2026-05-28",
+          "text": "测试ing，预计6月20日"
+        }
+      ],
+      "costSaving": {
+        "annualAmountWan": 28,
+        "reductionPercent": null,
+        "rawText": "预计收益28w"
+      },
+      "createdAt": "2026-04-08T00:00:00.000Z",
+      "updatedAt": "2026-05-28T00:00:00.000Z"
+    },
+    {
+      "id": "t_9",
+      "seq": 9,
+      "type": "降本",
+      "title": "兆高合页谈价",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-01",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-01",
+          "text": "已催过，核算ing"
+        },
+        {
+          "date": "2026-04-08",
+          "text": "降4.7%，缺成本分析表"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "新成本分析表已完成，已提交"
+        }
+      ],
+      "costSaving": {
+        "annualAmountWan": null,
+        "reductionPercent": 4.7,
+        "rawText": "降4.7%"
+      },
+      "createdAt": "2026-04-01T00:00:00.000Z",
+      "updatedAt": "2026-04-13T00:00:00.000Z"
+    },
+    {
+      "id": "t_10",
+      "seq": 10,
+      "type": "其他-日常",
+      "title": "海蒂诗风影移门价格错误",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-03",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "徐文德报价错误，一月的时候就发现有一个错了，现在又出现一个。邀请陆婷统一核对，确认只有一款错误，等确认单取改价"
+        },
+        {
+          "date": "2026-04-08",
+          "text": "流程退回，需要沟通记录和用量情况，再提交"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "已完成"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-03T00:00:00.000Z",
+      "updatedAt": "2026-04-13T00:00:00.000Z"
+    },
+    {
+      "id": "t_11",
+      "seq": 11,
+      "type": "其他-日常",
+      "title": "准分子新开一家（金东亚？）",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-03",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "先打样老款的流光白，其余流光花色已下市"
+        },
+        {
+          "date": "2026-04-09",
+          "text": "暂定0417突击厂里看看"
+        },
+        {
+          "date": "2026-04-20",
+          "text": "非常拉垮，暂待流光白来样"
+        },
+        {
+          "date": "2026-04-28",
+          "text": "怡黄的价格准分子也是81，压贴费13，运费2元，总计15。距离不占优。德必隆目前厚板13，薄板15"
+        },
+        {
+          "date": "2026-05-19",
+          "text": "怡黄谈价+金东亚整改中"
+        },
+        {
+          "date": "2026-05-28",
+          "text": "怡黄底价+金东亚月底完工+金东亚底价+卡模底价（汇总成表格了），花色信息不全，摸底补全中"
+        },
+        {
+          "date": "2026-06-01",
+          "text": "和领导汇报过了，领导意思是我们订单喂不饱金东亚，卡模质量也不行，项目可以暂时搁置。但曹阳和我的想法是再试一下卡模。给了卡模和金东亚都在打样中了"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-03T00:00:00.000Z",
+      "updatedAt": "2026-06-01T00:00:00.000Z"
+    },
+    {
+      "id": "t_12",
+      "seq": 12,
+      "type": "降本",
+      "title": "密度板直采",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-30",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-04-30",
+          "text": "从4925开始，这一项三款物料，预计省4.5w。4925的报价是来了，等德必隆的直采报价；其他的暂时也没什么合适的，先暂缓一下，把4925的搞定。\n4925已完成0518\n其他的需要统计一下，哪些切不了，标注一下，就算汇报结束了"
+        },
+        {
+          "date": "2026-06-09",
+          "text": "和曹阳沟通，统计了一下，考虑是否要把零散的都切给佳诺威"
+        }
+      ],
+      "costSaving": {
+        "annualAmountWan": 4.5,
+        "reductionPercent": null,
+        "rawText": null
+      },
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:06:54.342Z"
+    },
+    {
+      "id": "t_13",
+      "seq": 13,
+      "type": "降本",
+      "title": "准分子直采",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-30",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": null,
+          "text": "经过评估，只有4922合适，一年有3k+方，第二名的4912只有400方，其他的只有几十。暂时不考虑。德必隆意思是次品率比较高，怎么承担。\n新思路！直接和丰林谈价格，然后直采，把4922和4912的都归过去\n服了，丰林价格反而贵了。。。其他家如果标记准分子专用板，也会贵"
+        },
+        {
+          "date": "2026-05-19",
+          "text": "4922的按照准分子要求重新报价，4912的就用护墙板同款；同步要把德必隆那边的报价单都拿到"
+        },
+        {
+          "date": "2026-05-21",
+          "text": "丰林板子价格不行了1470降不下去了，其他家测试也很麻烦，直采可能搞不定了，先从准分子价格和压贴费上面去想办法吧"
+        },
+        {
+          "date": "2026-05-25",
+          "text": "德必隆面谈打算降价，核算中，持续给压力"
+        },
+        {
+          "date": "2026-06-08",
+          "text": "先追德必隆价格。后续和佳诺威谈好价格，让德必隆按价格采购，给德必隆单独报销素板费用，同频采购对该批物料进行盘盈。来货后和工艺等同事同频（自由流程），对该批货品进行跟踪"
+        },
+        {
+          "date": "2026-06-10",
+          "text": "去德必隆现场看了，4912E0的确认就是护墙板的"
+        },
+        {
+          "date": "2026-06-18",
+          "text": "追进度，说是要7月初"
+        }
+      ],
+      "costSaving": {
+        "annualAmountWan": 42,
+        "reductionPercent": null,
+        "rawText": null
+      },
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:09:40.038Z"
+    },
+    {
+      "id": "t_14",
+      "seq": 14,
+      "type": "其他-重点关注",
+      "title": "E1升级E0",
+      "owner": "周晓源",
+      "proposedAt": "2026-02-01",
+      "requiredAt": null,
+      "status": "取消",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "自备基材无料的陆续切换"
+        },
+        {
+          "date": "2026-04-07",
+          "text": "整理我乐密度板所有用途，同行密度板使用情况，涨价情况"
+        },
+        {
+          "date": "2026-04-15",
+          "text": "加和的都升E0，佳诺威(P2)的等测试结果，预计5月1日前"
+        },
+        {
+          "date": "2026-04-28",
+          "text": "要开始整报价了"
+        },
+        {
+          "date": "2026-04-29",
+          "text": "最新要求，不改了"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "updatedAt": "2026-04-29T00:00:00.000Z"
+    },
+    {
+      "id": "t_15",
+      "seq": 15,
+      "type": "新品-日常",
+      "title": "阿克德铰链签样",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-07",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-07",
+          "text": "今日发货，螺丝有修改，注意检查"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "和张琪说过了，写标签ing，天润下午过来"
+        },
+        {
+          "date": "2026-04-16",
+          "text": "已交接"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-07T00:00:00.000Z",
+      "updatedAt": "2026-04-16T00:00:00.000Z"
+    },
+    {
+      "id": "t_16",
+      "seq": 16,
+      "type": "新品-日常",
+      "title": "防风地吸",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-02",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-07",
+          "text": "封样物品收到了，签样ing"
+        },
+        {
+          "date": "2026-04-08",
+          "text": "编码已加，封样盒子不对，等新盒子,标签带给贝贝了"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "已签好，等编码"
+        },
+        {
+          "date": "2026-04-21",
+          "text": "一直卡在产品部没批"
+        },
+        {
+          "date": "2026-04-30",
+          "text": "已签样"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-02T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    },
+    {
+      "id": "t_17",
+      "seq": 17,
+      "type": "新品-日常",
+      "title": "西野红签样",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-07",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-07",
+          "text": "板子尚未签样，今日送过来"
+        },
+        {
+          "date": "2026-04-08",
+          "text": "已签"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-07T00:00:00.000Z",
+      "updatedAt": "2026-04-08T00:00:00.000Z"
+    },
+    {
+      "id": "t_18",
+      "seq": 18,
+      "type": "新品-日常",
+      "title": "莱瑟咖皮纹",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-07",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-07",
+          "text": "热转印膜五鑫的，报价ing；还有个黑色密度板，待伟杰报价"
+        },
+        {
+          "date": "2026-04-09",
+          "text": "又来了一个4912密度板E0的"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "几个补单都被退回了，重新整理价格ing"
+        },
+        {
+          "date": "2026-04-15",
+          "text": "已提，无问题，等编码"
+        },
+        {
+          "date": "2026-04-20",
+          "text": "已加"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-07T00:00:00.000Z",
+      "updatedAt": "2026-04-20T00:00:00.000Z"
+    },
+    {
+      "id": "t_19",
+      "seq": 19,
+      "type": "其他-日常",
+      "title": "苏世博封样不对+谈价",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-01",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-02",
+          "text": "出差ing回去解决"
+        },
+        {
+          "date": "2026-04-08",
+          "text": "确认重新签样，但样品还在"
+        },
+        {
+          "date": "2026-05-11",
+          "text": "效率是真的低，每周一催，每次都是一样的回复，又说要月底了"
+        },
+        {
+          "date": "2026-06-08",
+          "text": "已带给江宁苗福"
+        },
+        {
+          "date": "2026-06-12",
+          "text": "已完结"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-01T00:00:00.000Z",
+      "updatedAt": "2026-06-12T00:00:00.000Z"
+    },
+    {
+      "id": "t_20",
+      "seq": 20,
+      "type": "新品-日常",
+      "title": "沉头黑色内六角螺丝4X12",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-07",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-07",
+          "text": "球球加BOM才通知我，说是用于铝框柜的。三浦有类似物料，无库存，来货测试ing"
+        },
+        {
+          "date": "2026-04-10",
+          "text": "已来样，现成物料，测试无误可直接关联"
+        },
+        {
+          "date": "2026-04-14",
+          "text": "暂时搁置直接pass"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-07T00:00:00.000Z",
+      "updatedAt": "2026-04-14T00:00:00.000Z"
+    },
+    {
+      "id": "t_21",
+      "seq": 21,
+      "type": "新品-日常",
+      "title": "江南新花色-高光雪域金",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-07",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-04-08",
+          "text": "本周来不及大板了，要下周三"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "已催"
+        },
+        {
+          "date": "2026-04-15",
+          "text": "已到，交代涌现强先保留"
+        },
+        {
+          "date": "2026-04-20",
+          "text": "封边也到了，地柜里了"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "封边和小板带给江南了，大板周三评审，封边江南已签。"
+        },
+        {
+          "date": "2026-04-30",
+          "text": "等小批流程，封边已签样"
+        },
+        {
+          "date": "2026-05-08",
+          "text": "小批量流程已到，已安排预计0523到货"
+        },
+        {
+          "date": "2026-05-26",
+          "text": "昨日已到货，小批量ing，第二天结果不合格，报价已准备好"
+        },
+        {
+          "date": "2026-06-08",
+          "text": "来第二批，但是变形不合格，重新拉回去调整一下"
+        },
+        {
+          "date": "2026-06-18",
+          "text": "又来了，调整完了，已交接至忠皓测试"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-07T00:00:00.000Z",
+      "updatedAt": "2026-06-18T00:00:00.000Z"
+    },
+    {
+      "id": "t_22",
+      "seq": 22,
+      "type": "降本",
+      "title": "螺丝整体比价",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-08",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-04-08",
+          "text": "五一前出结果"
+        },
+        {
+          "date": "2026-04-21",
+          "text": "最终报价已经来了，Top10物料算下来能便宜7W左右，来样测试ing；哥尼迪节后报价"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "King有些还在做表处，还没好"
+        },
+        {
+          "date": "2026-05-06",
+          "text": "King样品已到，哥尼迪报价已到"
+        },
+        {
+          "date": "2026-05-11",
+          "text": "哥尼迪报价大幅占优，提供样品ing到了一起测试"
+        },
+        {
+          "date": "2026-05-18",
+          "text": "已给工艺测试（0528童柯的测试看起来很不错，但是居然没和原样对比。。。麻了），并联系好实验室测试"
+        },
+        {
+          "date": "2026-06-01",
+          "text": "哥尼迪胜出，质量测试两家都过了，工艺也是哥尼迪更合适一些，价格也是哥更合适"
+        },
+        {
+          "date": "2026-06-08",
+          "text": "史苗福测过了还行，韩意思是安排200套给直营店测试，过了就直接签。开模中，月底提供"
+        }
+      ],
+      "costSaving": {
+        "annualAmountWan": 26.58,
+        "reductionPercent": null,
+        "rawText": null
+      },
+      "createdAt": "2026-04-08T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:11:33.522Z"
+    },
+    {
+      "id": "t_23",
+      "seq": 23,
+      "type": "新品-日常",
+      "title": "IF下翻门+平板铰链",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-08",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-08",
+          "text": "编码已导入，未签样，实物和标签已带给研发王雨露"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "已催"
+        },
+        {
+          "date": "2026-04-20",
+          "text": "已催，立明不在"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "已签好，明天到"
+        },
+        {
+          "date": "2026-04-29",
+          "text": "已签样"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-08T00:00:00.000Z",
+      "updatedAt": "2026-04-29T00:00:00.000Z"
+    },
+    {
+      "id": "t_24",
+      "seq": 24,
+      "type": "其他-日常",
+      "title": "隐形、明装合页情况调查",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-08",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-08",
+          "text": "分SKU、供应商、价格、用量，整理一下"
+        },
+        {
+          "date": "2026-04-14",
+          "text": "已提交"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-08T00:00:00.000Z",
+      "updatedAt": "2026-04-14T00:00:00.000Z"
+    },
+    {
+      "id": "t_25",
+      "seq": 25,
+      "type": "其他-日常",
+      "title": "冰山白",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-09",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-09",
+          "text": "冰山白封边没签样，已通知美素，尽快做过来"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "签样都好了"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-09T00:00:00.000Z",
+      "updatedAt": "2026-04-13T00:00:00.000Z"
+    },
+    {
+      "id": "t_26",
+      "seq": 26,
+      "type": "新品-日常",
+      "title": "舍凡富盛升降机",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-10",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-10",
+          "text": "未给富盛报销"
+        },
+        {
+          "date": "2026-06-09",
+          "text": "交接给廷廷"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-10T00:00:00.000Z",
+      "updatedAt": "2026-06-09T00:00:00.000Z"
+    },
+    {
+      "id": "t_27",
+      "seq": 27,
+      "type": "新品-日常",
+      "title": "舍凡富盛双向抽",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-15",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-05-20",
+          "text": "未报销，一起报了，0519的时候刚改了配置"
+        },
+        {
+          "date": "2026-06-09",
+          "text": "交接给廷廷"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-15T00:00:00.000Z",
+      "updatedAt": "2026-06-09T00:00:00.000Z"
+    },
+    {
+      "id": "t_28",
+      "seq": 28,
+      "type": "新品-日常",
+      "title": "舍凡金盛店用磁铁和支架",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-18",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-05-18",
+          "text": "流程已到，已安排舍凡代购"
+        },
+        {
+          "date": "2026-05-26",
+          "text": "已开票，交接给廷廷"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-18T00:00:00.000Z",
+      "updatedAt": "2026-05-26T00:00:00.000Z"
+    },
+    {
+      "id": "t_29",
+      "seq": 29,
+      "type": "其他-日常",
+      "title": "天斯情况沟通",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-10",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-13",
+          "text": "报价单已拿到，测试结果问苗福\n现在3.05（含盖子）报价2.75+0.3=3.05\n总体差价3.05比3.05，居然一致？\n史苗福反馈问题：\n1、厚门时避让位置没有炬森、哥尼迪和海蒂诗的这种大，28厚门会刮 \n2、开启后大角度自由悬停还是没有 \n3、外观原因PXO是作为系列卖点，不能随便更换铰链外观\n另外两款产品价格过高\n50033624 帕诺黑色窄铝框阻尼铰链-全盖(JL-PLQ-H)——现在2.86，报价4.4\n50033629 帕诺黑色大角度铰链-全盖(JL-PLG-H)——现在8.03，报价10.42\n结论：价格是便宜一点的，但是厚门没法用，也就是28的时候会刮擦到，没招了。窄铝框和大角度的贵了很多"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-10T00:00:00.000Z",
+      "updatedAt": "2026-04-13T00:00:00.000Z"
+    },
+    {
+      "id": "t_30",
+      "seq": 30,
+      "type": "保供-材料波动",
+      "title": "角铁",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-15",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-15",
+          "text": "已拿到平行报价，规格有调整，需要和张琪碰一下"
+        },
+        {
+          "date": "2026-04-20",
+          "text": "需要出一个图纸，然后就签样走扩货源流程了"
+        },
+        {
+          "date": "2026-04-22",
+          "text": "已提交"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-15T00:00:00.000Z",
+      "updatedAt": "2026-04-22T00:00:00.000Z"
+    },
+    {
+      "id": "t_31",
+      "seq": 31,
+      "type": "其他-日常",
+      "title": "海日质保金退回",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-15",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-22",
+          "text": "已提交"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "头秃啊，要我们搞一个自由流程"
+        },
+        {
+          "date": "2026-05-06",
+          "text": "已要求财务转发流程给庄总审批"
+        },
+        {
+          "date": "2026-05-09",
+          "text": "已完成"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-15T00:00:00.000Z",
+      "updatedAt": "2026-05-09T00:00:00.000Z"
+    },
+    {
+      "id": "t_32",
+      "seq": 32,
+      "type": "其他-日常",
+      "title": "双马质保金退回",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-15",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-04-22",
+          "text": "已提交，退回了，等新抬头质保金提交之后再整"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-15T00:00:00.000Z",
+      "updatedAt": "2026-04-22T00:00:00.000Z"
+    },
+    {
+      "id": "t_33",
+      "seq": 33,
+      "type": "降本",
+      "title": "门锁锌改铝",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-16",
+      "requiredAt": null,
+      "status": "暂待",
+      "notes": [
+        {
+          "date": "2026-04-16",
+          "text": "了解到名门那边锌改铝已经在大范围推动，感觉可以考虑一下，需要了解技术难点"
+        },
+        {
+          "date": "2026-05-18",
+          "text": "一体锁报价的时候也会同步报一下，看看差距，看看具体产品"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-16T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:11:50.921Z"
+    },
+    {
+      "id": "t_34",
+      "seq": 34,
+      "type": "新品-日常",
+      "title": "图特折叠门导入",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-16",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-16",
+          "text": "图特909B报价ing，轨道有多尺寸，确认某一个尺寸ing"
+        },
+        {
+          "date": "2026-04-21",
+          "text": "已提交"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-16T00:00:00.000Z",
+      "updatedAt": "2026-04-21T00:00:00.000Z"
+    },
+    {
+      "id": "t_35",
+      "seq": 35,
+      "type": "新品-日常",
+      "title": "图特幽灵门导入",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-16",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-16",
+          "text": "图特幽灵门报价ing"
+        },
+        {
+          "date": "2026-04-20",
+          "text": "流程已提交"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-16T00:00:00.000Z",
+      "updatedAt": "2026-04-20T00:00:00.000Z"
+    },
+    {
+      "id": "t_36",
+      "seq": 36,
+      "type": "新品-日常",
+      "title": "隐形二合一连接件",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-22",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-22",
+          "text": "需要新增茶水柜新工艺用的隐形连接件，问了乐思富只有塑料款的，安帝斯有"
+        },
+        {
+          "date": "2026-04-23",
+          "text": "已归档，缺签样"
+        },
+        {
+          "date": "2026-04-29",
+          "text": "已签样"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-22T00:00:00.000Z",
+      "updatedAt": "2026-04-29T00:00:00.000Z"
+    },
+    {
+      "id": "t_37",
+      "seq": 37,
+      "type": "新品-日常",
+      "title": "按弹口袋门",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-23",
+      "requiredAt": "2026-04-30",
+      "status": "取消",
+      "notes": [
+        {
+          "date": "2026-04-23",
+          "text": "需要加4个编码，3个原料-轨道；1个成品-五金配件，等报价单，流程已预填完成"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "工艺和研发打架了，取消"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-23T00:00:00.000Z",
+      "updatedAt": "2026-04-27T00:00:00.000Z"
+    },
+    {
+      "id": "t_38",
+      "seq": 38,
+      "type": "新品-日常",
+      "title": "古铜金层板铝圆管托",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-23",
+      "requiredAt": "2026-04-30",
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-23",
+          "text": "需要加2个编码，1个原料-圆管；1个成品-圆管托。起订量已谈到最低，一批大概1.4w左右。"
+        },
+        {
+          "date": "2026-04-27",
+          "text": "已提交"
+        },
+        {
+          "date": "2026-04-28",
+          "text": "被怼了，被研发坑了，不是铝管，是不锈钢，忘记改名字了。价格也不对，需要重新调整"
+        },
+        {
+          "date": "2026-05-09",
+          "text": "已提交，图纸待签样"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-23T00:00:00.000Z",
+      "updatedAt": "2026-05-09T00:00:00.000Z"
+    },
+    {
+      "id": "t_39",
+      "seq": 39,
+      "type": "其他-日常",
+      "title": "高林质保金",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-27",
+      "requiredAt": null,
+      "status": "取消",
+      "notes": [
+        {
+          "date": "2026-04-27",
+          "text": "按合同执行25年8月最后一批货"
+        },
+        {
+          "date": "2026-05-18",
+          "text": "再次沟通，要到31年2月才能退，供方表示要走法律途径，已通告曹阳、语文、陈恺"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-27T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:01:28.131Z"
+    },
+    {
+      "id": "t_40",
+      "seq": 40,
+      "type": "新品-日常",
+      "title": "多扇折叠门配件",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-28",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-04-28",
+          "text": "已问报价，轨道很贵诶，还需要添加一个图特的对比"
+        },
+        {
+          "date": "2026-05-11",
+          "text": "已提交"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-28T00:00:00.000Z",
+      "updatedAt": "2026-05-11T00:00:00.000Z"
+    },
+    {
+      "id": "t_41",
+      "seq": 41,
+      "type": "其他-重点关注",
+      "title": "舍凡膨胀螺丝二供",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-30",
+      "requiredAt": null,
+      "status": "暂待",
+      "notes": [
+        {
+          "date": null,
+          "text": "年初的项目，测了好多家，都不行。"
+        },
+        {
+          "date": "2026-04-30",
+          "text": "三浦的已到，安排测试"
+        },
+        {
+          "date": "2026-05-18",
+          "text": "测试完成，不合格，逼逼叨叨半天才认自己的问题，真的是有点子无语，回去改螺丝了"
+        },
+        {
+          "date": "2026-06-20",
+          "text": "暂时不管了，"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:11:44.742Z"
+    },
+    {
+      "id": "t_42",
+      "seq": 42,
+      "type": "降本",
+      "title": "凯里一体锁直降",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-05",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-05-05",
+          "text": "已签新样品，等库存消耗再走流程。"
+        },
+        {
+          "date": "2026-05-08",
+          "text": "已寄出"
+        },
+        {
+          "date": "2026-05-20",
+          "text": "签样都好了，但是目前用量较少，预估老库存消耗完得6月底"
+        },
+        {
+          "date": "2026-06-01",
+          "text": "好消息，最后一批货已经结束了，马上要个报价单调价啦～"
+        },
+        {
+          "date": "2026-06-06",
+          "text": "已完成，平均降幅9.56%，年化省本约18.5w"
+        }
+      ],
+      "costSaving": {
+        "annualAmountWan": 18.5,
+        "reductionPercent": 9.56,
+        "rawText": "年化省本约18.5w | 降幅9.56%"
+      },
+      "createdAt": "2026-05-05T00:00:00.000Z",
+      "updatedAt": "2026-06-06T00:00:00.000Z"
+    },
+    {
+      "id": "t_43",
+      "seq": 43,
+      "type": "降本",
+      "title": "凯里一体锁和兆高合页二供",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-05",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-05-06",
+          "text": "拿样品给名门，08已寄出"
+        },
+        {
+          "date": "2026-05-25",
+          "text": "报价来了，比凯里降价后贵一点点"
+        },
+        {
+          "date": "2026-05-28",
+          "text": "一体锁方面名门的锌合金报价没有优势且外观差异很大估计是直接pass了；铝合金有优势，但外观也有区别，而且打样的话还得调色，尺寸也不一样。先让他来一个铝合金的外观样来，评估一下吧。\n合页方面是便宜的，但是便宜的很少，25年年采100w，只能便宜4w多，5个点都不到。来样还只能先做切割样，表出也会有差异，只能做性能测试，但我也样品和实物不一致。\n问问凯里有没有铝合金款"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-05T00:00:00.000Z",
+      "updatedAt": "2026-05-28T00:00:00.000Z"
+    },
+    {
+      "id": "t_44",
+      "seq": 44,
+      "type": "其他-日常",
+      "title": "发光穿衣镜新品",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-06",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-05-06",
+          "text": "签样图纸已推进，编码没加"
+        },
+        {
+          "date": "2026-05-20",
+          "text": "马上添加，已提交"
+        },
+        {
+          "date": "2026-05-28",
+          "text": "完工"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-28T00:00:00.000Z"
+    },
+    {
+      "id": "t_45",
+      "seq": 45,
+      "type": "新品-日常",
+      "title": "电动收纳五金",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-09",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-05-25",
+          "text": "已最终比价结束，共计导入33款物料"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-09T00:00:00.000Z",
+      "updatedAt": "2026-05-25T00:00:00.000Z"
+    },
+    {
+      "id": "t_46",
+      "seq": 46,
+      "type": "降本",
+      "title": "密度板谈价",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-20",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-05-20",
+          "text": "有人说钦州丰林18mm780镂铣板到货价格在1600，王腾说不可能，但也核算中\n后续再问一下大亚、佰仕达"
+        },
+        {
+          "date": "2026-05-29",
+          "text": "下周一过来，后来报价到货价1700（运费150，素板价格很给力了，但是运费实在是吃亏）"
+        },
+        {
+          "date": "2026-06-12",
+          "text": "又谈了一下，最低能到1670，"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-20T00:00:00.000Z",
+      "updatedAt": "2026-06-12T00:00:00.000Z"
+    },
+    {
+      "id": "t_47",
+      "seq": 47,
+      "type": "降本",
+      "title": "E0货源变更为E1",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-20",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-05-20",
+          "text": "变更期间添加为E0的货源要改回来\n暂时不动了，又有可能要改E0"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-20T00:00:00.000Z",
+      "updatedAt": "2026-05-20T00:00:00.000Z"
+    },
+    {
+      "id": "t_48",
+      "seq": 48,
+      "type": "其他-日常",
+      "title": "方闪需求转运费",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-20",
+      "requiredAt": null,
+      "status": "已完结",
+      "notes": [
+        {
+          "date": "2026-05-20",
+          "text": "已要求报价，价格2.6不合理，需要变更为2.58"
+        },
+        {
+          "date": "2026-05-22",
+          "text": "已提交，价格为2.58"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-20T00:00:00.000Z",
+      "updatedAt": "2026-05-22T00:00:00.000Z"
+    },
+    {
+      "id": "t_49",
+      "seq": 49,
+      "type": "新品-重点关注",
+      "title": "慧鱼螺丝",
+      "owner": "周晓源",
+      "proposedAt": "2026-06-05",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-06-05",
+          "text": "韩立明提出要导入慧鱼，但是需要配套我们现有的装饰盖，已沟通慧鱼。"
+        },
+        {
+          "date": "2026-06-16",
+          "text": "节后出价格，已在同步画图设计"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-06-05T00:00:00.000Z",
+      "updatedAt": "2026-06-16T00:00:00.000Z"
+    },
+    {
+      "id": "t_50",
+      "seq": 50,
+      "type": "新品-日常",
+      "title": "影木新增-门+护墙",
+      "owner": "周晓源",
+      "proposedAt": "2026-06-11",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-06-11",
+          "text": "影木需要新增素板和封边条"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    },
+    {
+      "id": "t_51",
+      "seq": 51,
+      "type": "其他-日常",
+      "title": "美标物料是否取消",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-20",
+      "requiredAt": null,
+      "status": "取消",
+      "notes": [
+        {
+          "date": "2026-04-20",
+          "text": "查了没有BOM，甘泉说胡志鹏通知的，只用一次，后面都用零售物料"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-20T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:01:47.047Z"
+    },
+    {
+      "id": "t_52",
+      "seq": 52,
+      "type": "其他-日常",
+      "title": "富胜合同修改",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-10",
+      "requiredAt": null,
+      "status": "取消",
+      "notes": [
+        {
+          "date": "2026-04-10",
+          "text": "因为衣柜收纳的导入，要改成月结"
+        },
+        {
+          "date": "2026-04-20",
+          "text": "先扛一下，供应商担保发货，阶段性付款"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-10T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:01:49.744Z"
+    },
+    {
+      "id": "t_53",
+      "seq": 53,
+      "type": "保供-材料波动",
+      "title": "三威喷粉板涨价",
+      "owner": "周晓源",
+      "proposedAt": "2026-04-07",
+      "requiredAt": null,
+      "status": "取消",
+      "notes": [
+        {
+          "date": "2026-04-07",
+          "text": "涨价函来了，要+50，已谈到这两天订单可按原价接收。但是涨价只能拖个至多2-3天，必须要涨"
+        },
+        {
+          "date": "2026-04-13",
+          "text": "又来追了，问下领导"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-04-07T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:01:51.809Z"
+    },
+    {
+      "id": "t_54",
+      "seq": 54,
+      "type": "降本",
+      "title": "浮雕板二供",
+      "owner": "周晓源",
+      "proposedAt": "2026-06-01",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-06-01",
+          "text": "重新切了重新干"
+        }
+      ],
+      "costSaving": {
+        "annualAmountWan": 10,
+        "reductionPercent": null,
+        "rawText": null
+      },
+      "createdAt": "2026-06-01T00:00:00.000Z",
+      "updatedAt": "2026-06-21T05:12:29.164Z"
+    },
+    {
+      "id": "t_55",
+      "seq": 55,
+      "type": "降本",
+      "title": "三合一摸排",
+      "owner": "周晓源",
+      "proposedAt": "2026-05-01",
+      "requiredAt": null,
+      "status": "进行中",
+      "notes": [
+        {
+          "date": "2026-06-15",
+          "text": "正式启动，整理了目前用量，感觉只有三合一有摸排的价值，孔盖一年只有20多万，今年更少。"
+        },
+        {
+          "date": "2026-06-21",
+          "text": "可以拿到成本分析，对照着看一下细节，同步拿到实物样品"
+        }
+      ],
+      "costSaving": null,
+      "createdAt": "2026-05-01T00:00:00.000Z",
+      "updatedAt": "2026-06-21T00:00:00.000Z"
+    }
+  ]
+}
+</script>
+
+<!-- ===== 应用脚本 ===== -->
+<script>
+(function(){
+"use strict";
+
+/* ============ 全局状态 ============ */
+var state = null;       // {version,lastSavedAt,source,typeColors,tasks}
+var isDirty = false;
+var editingId = null;   // 当前编辑的任务id，null=新建
+var filters = { search:"", type:"", status:"" };
+var collapsedCols = {}; // 列折叠状态
+
+var STATUSES = ["进行中","暂待","已完结","取消"];
+var STATUS_KEY = {"进行中":"doing","暂待":"wait","已完结":"done","取消":"cancel"};
+var TYPES = ["新品-日常","新品-重点关注","降本","其他-日常","其他-重点关注","保供-材料波动"];
+
+/* ============ 工具 ============ */
+function $(s,p){return (p||document).querySelector(s)}
+function $all(s,p){return Array.prototype.slice.call((p||document).querySelectorAll(s))}
+function pad2(n){return String(n).padStart(2,"0")}
+function todayISO(){var d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())}
+function nowISO(){return new Date().toISOString()}
+function escapeHtml(s){if(s==null)return"";return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function truncate(s,n){s=s||"";return s.length>n?s.slice(0,n)+"…":s}
+function formatDate(iso){if(!iso)return"—";var m=iso.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1].slice(2)+"-"+m[2]+"-"+m[3];return iso}
+function formatDateFull(iso){if(!iso)return"—";var m=iso.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+"-"+m[2]+"-"+m[3];return iso}
+function parseDateNum(iso){if(!iso)return 0;var m=iso.match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return 0;return parseInt(m[1])*10000+parseInt(m[2])*100+parseInt(m[3])}
+function isOverdue(t){if(!t.requiredAt)return false;if(t.status==="已完结"||t.status==="取消")return false;return parseDateNum(t.requiredAt)<parseDateNum(todayISO())}
+function overdueDays(t){if(!isOverdue(t))return 0;var r=new Date(t.requiredAt+"T00:00:00");var n=new Date(todayISO()+"T00:00:00");return Math.floor((n-r)/86400000)}
+function lastNote(t){if(!t.notes||!t.notes.length)return null;return t.notes[t.notes.length-1]}
+function lastNoteDate(t){for(var i=t.notes.length-1;i>=0;i--){if(t.notes[i].date)return t.notes[i].date}return null}
+function typeColor(type){return (state.typeColors&&state.typeColors[type])||"#ccc"}
+function genId(){return "t_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function getFileName(){try{var p=decodeURIComponent(location.pathname);var b=p.split("/").pop();if(b&&/\.html?$/i.test(b))return b}catch(e){}return "任务跟踪看板.html"}
+function getBufferKey(){return "taskboard_buffer_v1::"+getFileName()}
+
+function showToast(msg,type){var el=$("#toast");el.textContent=msg;el.className="toast show "+(type||"");clearTimeout(el._t);el._t=setTimeout(function(){el.className="toast"},2600)}
+
+/* ============ 数据加载与持久化 ============ */
+function loadDataFromFile(){
+  var el=document.getElementById("taskboard-data");
+  try{return JSON.parse(el.textContent)}catch(e){console.error("数据块解析失败",e);return {version:"1.0",lastSavedAt:"",typeColors:{},tasks:[]}}
+}
+
+function markDirty(){isDirty=true;updateDirtyUI();saveBuffer()}
+function markClean(){isDirty=false;updateDirtyUI()}
+function updateDirtyUI(){var el=$("#dirtyIndicator"),tx=$("#dirtyText");if(isDirty){el.className="dirty-indicator dirty";tx.textContent="未保存"}else{el.className="dirty-indicator";tx.textContent="已保存 "+(state.lastSavedAt?formatDateFull(state.lastSavedAt.slice(0,10)):"")}}
+
+function saveBuffer(){
+  try{
+    var buf={data:state,bufferedAt:nowISO(),fileLastSavedAt:state.lastSavedAt||""};
+    localStorage.setItem(getBufferKey(),JSON.stringify(buf));
+  }catch(e){console.warn("localStorage 写入失败",e)}
+}
+
+function checkBufferOnLoad(){
+  var raw;
+  try{raw=localStorage.getItem(getBufferKey())}catch(e){return}
+  if(!raw)return;
+  var buf;
+  try{buf=JSON.parse(raw)}catch(e){try{localStorage.removeItem(getBufferKey())}catch(e2){}return}
+  var fileSavedAt=state.lastSavedAt||"";
+  var bufFileSavedAt=buf.fileLastSavedAt||"";
+  var bufferedAt=buf.bufferedAt||"";
+  // 文件比 buffer 新 → 文件已被新版本覆盖，丢弃 buffer
+  if(fileSavedAt>bufFileSavedAt){try{localStorage.removeItem(getBufferKey())}catch(e){}return}
+  // 同版本但有未保存改动 → 提示恢复
+  if(bufferedAt>bufFileSavedAt && buf.data && buf.data.tasks){
+    showRecoverBar(bufferedAt,buf.data);
+  }
+}
+
+function showRecoverBar(bufferedAt,bufferData){
+  var bar=document.createElement("div");
+  bar.className="recover-bar";
+  bar.innerHTML='<span>检测到上次有未保存的改动（'+formatDateFull(bufferedAt.slice(0,10))+' '+bufferedAt.slice(11,16)+'）。</span>';
+  var rec=document.createElement("button");rec.className="btn btn-primary";rec.textContent="恢复改动";
+  var dis=document.createElement("button");dis.className="btn";dis.textContent="丢弃";
+  rec.onclick=function(){
+    state=bufferData;
+    renderAll();markDirty();
+    document.body.removeChild(bar);
+    showToast("已恢复未保存的改动，记得点保存","success");
+  };
+  dis.onclick=function(){try{localStorage.removeItem(getBufferKey())}catch(e){}document.body.removeChild(bar)};
+  bar.appendChild(rec);bar.appendChild(dis);
+  document.body.appendChild(bar);
+}
+
+function syncBufferAfterSave(){try{var buf={data:state,bufferedAt:nowISO(),fileLastSavedAt:state.lastSavedAt};localStorage.setItem(getBufferKey(),JSON.stringify(buf))}catch(e){}}
+
+/* 保存：生成新 HTML 并下载 */
+function fetchOriginalHTML(){
+  // XHR 同步（file:// 兼容性最好）
+  try{
+    var xhr=new XMLHttpRequest();
+    xhr.open("GET",location.href,false);
+    xhr.overrideMimeType&&xhr.overrideMimeType("text/html;charset=utf-8");
+    xhr.send(null);
+    if(xhr.status===0||xhr.status===200){return xhr.responseText}
+  }catch(e){}
+  // fetch 异步尝试（部分浏览器 file:// 允许）—— 这里同步无法用，留给异步版本
+  return null;
+}
+
+function exportHTML(){
+  state.lastSavedAt=nowISO();
+  var jsonStr=JSON.stringify(state,null,2);
+  // 转义 closing-script-tag 防止数据块提前结束
+  var safeJson=jsonStr.replace(/<\/(script)/gi,"<\\/$1");
+  // 先把最新数据写回 DOM 数据块（保证 outerHTML fallback 也能拿到最新数据）
+  var dataEl=document.getElementById("taskboard-data");
+  if(dataEl)dataEl.textContent=safeJson;
+  // 构造数据块；闭合标签拆开写避免本脚本块提前结束
+  var openTag='<script type="application/json" id="taskboard-data">';
+  var closeTag='<\/'+'script>';
+  var newDataBlock=openTag+"\n"+safeJson+"\n"+closeTag;
+
+  var originalHTML=fetchOriginalHTML();
+  if(!originalHTML){
+    // fallback：用 DOM 序列化（此时数据块已更新为最新）
+    originalHTML="<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+  }
+
+  var RE=/<script\s+type="application\/json"\s+id="taskboard-data">[\s\S]*?<\/script>/i;
+  var newHTML;
+  if(RE.test(originalHTML)){
+    newHTML=originalHTML.replace(RE,function(){return newDataBlock});
+  }else{
+    newHTML=originalHTML.replace(/<\/body>/i,function(){return newDataBlock+"\n</body>"});
+  }
+
+  downloadBlob(newHTML,getFileName(),"text/html");
+  markClean();
+  syncBufferAfterSave();
+  renderAll();
+  // 禁用按钮防重复
+  var btn=$("#saveBtn");btn.disabled=true;btn.textContent="已保存 ✓";
+  setTimeout(function(){btn.disabled=false;btn.textContent="💾 保存"},1200);
+  showToast("已保存，请用下载的新文件覆盖旧文件","success");
+}
+
+function downloadBlob(content,filename,mime){
+  var blob=new Blob([content],{type:(mime||"text/plain")+";charset=utf-8"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url)},150);
+}
+
+/* ============ 渲染 ============ */
+function renderAll(){renderStats();renderTimeline();renderKanban()}
+
+function renderStats(){
+  var s={进行中:0,暂待:0,已完结:0,取消:0,overdue:0,cost:0};
+  state.tasks.forEach(function(t){
+    if(s[t.status]!==undefined)s[t.status]++;
+    if(isOverdue(t))s.overdue++;
+    if(t.costSaving&&t.costSaving.annualAmountWan)s.cost+=t.costSaving.annualAmountWan;
+  });
+  var html='<div class="stat doing"><span class="num">'+s["进行中"]+'</span><span class="lbl">进行中</span></div>'
+    +'<div class="stat wait"><span class="num">'+s["暂待"]+'</span><span class="lbl">暂待</span></div>'
+    +'<div class="stat done"><span class="num">'+s["已完结"]+'</span><span class="lbl">已完结</span></div>'
+    +'<div class="stat cancel"><span class="num">'+s["取消"]+'</span><span class="lbl">取消</span></div>'
+    +'<div class="stat overdue"><span class="num">'+s.overdue+'</span><span class="lbl">逾期</span></div>'
+    +'<div class="stat cost"><span class="num">'+s.cost.toFixed(1)+'</span><span class="lbl">降本年省(万)</span></div>'
+    +'<div class="stat"><span class="num">'+state.tasks.length+'</span><span class="lbl">总计</span></div>';
+  $("#statsBar").innerHTML=html;
+}
+
+function renderTimeline(){
+  var items=state.tasks.slice().sort(function(a,b){
+    return (b.updatedAt||"").localeCompare(a.updatedAt||"");
+  }).slice(0,20);
+  var html="";
+  if(!items.length){html='<div class="timeline-empty">暂无任务</div>';$("#timeline").innerHTML=html;return}
+  items.forEach(function(t){
+    var ln=lastNote(t);
+    var d=(t.updatedAt||"").slice(0,10);
+    html+='<div class="tl-item" data-jump="'+t.id+'" style="border-left-color:'+typeColor(t.type)+'">'
+      +'<div class="tl-date">'+formatDate(d)+'</div>'
+      +'<div class="tl-title">'+escapeHtml(truncate(t.title,22))+'</div>'
+      +'<div class="tl-note">'+escapeHtml(truncate(ln?ln.text:"",30))+'</div>'
+      +'</div>';
+  });
+  $("#timeline").innerHTML=html;
+}
+
+function renderKanban(){
+  var kanban=$("#kanban");
+  var html="";
+  STATUSES.forEach(function(st){
+    var key=STATUS_KEY[st];
+    var tasks=state.tasks.filter(taskMatchesFilters).filter(function(t){return t.status===st});
+    var collapsed=collapsedCols[st]?"collapsed":"";
+    html+='<div class="column col-'+key+' '+collapsed+'" data-status="'+st+'">'
+      +'<div class="col-head" data-toggle="'+st+'">'
+        +'<span class="col-title">'+st+'<span class="col-badge">'+tasks.length+'</span></span>'
+        +'<span class="col-toggle">'+(collapsedCols[st]?"▶":"▼")+'</span>'
+      +'</div>'
+      +'<div class="col-body" data-drop="'+st+'">';
+    if(!tasks.length){
+      html+='<div class="cards-empty">'+(filters.search||filters.type||filters.status?"无匹配":"拖拽卡片到此处")+'</div>';
+    }else{
+      tasks.forEach(function(t){html+=renderCard(t)});
+    }
+    html+='</div></div>';
+  });
+  kanban.innerHTML=html;
+}
+
+function renderCard(t){
+  var ln=lastNote(t);
+  var od=isOverdue(t);
+  var odDays=overdueDays(t);
+  var reqClass=od?' req':'';
+  var reqHtml=t.requiredAt?('<span class="tag'+reqClass+'">要求 '+formatDate(t.requiredAt)+(od?' ⚠':'')+'</span>'):'';
+  var costHtml=(t.costSaving&&t.costSaving.annualAmountWan)?('<span class="tag" style="color:#00936b">省'+t.costSaving.annualAmountWan+'万</span>'):'';
+  var noteHtml="";
+  if(ln){
+    var dt=ln.date?formatDate(ln.date)+" ":"";
+    noteHtml='<div class="card-note"><span class="note-date">'+escapeHtml(dt)+'</span>'+escapeHtml(truncate(ln.text,80))+'</div>';
+  }
+  return '<div class="card'+(od?" overdue":"")+'" draggable="true" data-id="'+t.id+'" style="border-left-color:'+typeColor(t.type)+'">'
+    +(od?'<span class="card-overdue-badge">逾期'+odDays+'天</span>':"")
+    +'<div class="card-title">'+escapeHtml(t.title)+'</div>'
+    +'<div class="card-meta"><span class="tag">'+escapeHtml(t.type)+'</span>'+reqHtml+costHtml+'</div>'
+    +noteHtml
+    +'</div>';
+}
+
+/* ============ 筛选 ============ */
+function taskMatchesFilters(t){
+  if(filters.status && t.status!==filters.status)return false;
+  if(filters.type && t.type!==filters.type)return false;
+  if(filters.search){
+    var q=filters.search.toLowerCase();
+    var inTitle=(t.title||"").toLowerCase().indexOf(q)>=0;
+    var inNotes=(t.notes||[]).some(function(n){return (n.text||"").toLowerCase().indexOf(q)>=0});
+    if(!inTitle&&!inNotes)return false;
+  }
+  return true;
+}
+function applyFilters(){renderKanban()}
+
+/* ============ 编辑 ============ */
+function openEditor(id){
+  editingId=id;
+  var t=id?findById(id):null;
+  $("#editTitle").textContent=t?"编辑任务":"新建任务";
+  $("#deleteBtn").style.display=t?"inline-block":"none";
+  var body=$("#editBody");
+  var isCost=(t&&t.type==="降本");
+  body.innerHTML=
+    '<div class="form-row"><label>事项标题 *</label><input id="f_title" value="'+escapeHtml(t?t.title:"")+'" placeholder="任务名称"></div>'
+    +'<div class="form-grid3">'
+      +'<div class="form-row"><label>类型</label><select id="f_type">'+TYPES.map(function(tp){return '<option value="'+tp+'"'+((t?t.type:"新品-日常")===tp?" selected":"")+'>'+tp+'</option>'}).join("")+'</select></div>'
+      +'<div class="form-row"><label>责任人</label><input id="f_owner" value="'+escapeHtml(t?t.owner:"周晓源")+'"></div>'
+      +'<div class="form-row"><label>状态</label><select id="f_status">'+STATUSES.map(function(st){return '<option value="'+st+'"'+((t?t.status:"进行中")===st?" selected":"")+'>'+st+'</option>'}).join("")+'</select></div>'
+    +'</div>'
+    +'<div class="form-grid2">'
+      +'<div class="form-row"><label>提出时间</label><input type="date" id="f_proposed" value="'+(t&&t.proposedAt?t.proposedAt:"")+'"></div>'
+      +'<div class="form-row"><label>要求完成时间</label><input type="date" id="f_required" value="'+(t&&t.requiredAt?t.requiredAt:"")+'"></div>'
+    +'</div>'
+    +'<div class="form-grid2 cost-row'+(isCost?" show":"")+'" id="costRow">'
+      +'<div class="form-row"><label>年省本(万)</label><input type="number" step="0.1" id="f_cost" value="'+(t&&t.costSaving&&t.costSaving.annualAmountWan?t.costSaving.annualAmountWan:"")+'" placeholder="如 7.4"></div>'
+      +'<div class="form-row"><label>降幅(%)</label><input type="number" step="0.1" id="f_reduce" value="'+(t&&t.costSaving&&t.costSaving.reductionPercent?t.costSaving.reductionPercent:"")+'" placeholder="如 3.7"></div>'
+    +'</div>'
+    +'<div class="notes-section">'
+      +'<h4>进度备注 '+(t&&t.notes.length?'<span style="color:#bbb;font-weight:400">('+t.notes.length+')</span>':"")+'</h4>'
+      +'<div class="notes-list" id="notesList">'+renderNotesList(t)+'</div>'
+      +'<div class="append-row">'
+        +'<input type="date" id="appendDate" value="'+todayISO()+'">'
+        +'<textarea id="appendText" placeholder="追加进度备注…"></textarea>'
+        +'<button class="btn btn-primary" id="appendBtn">追加</button>'
+      +'</div>'
+    +'</div>';
+  // 类型切换显示降本字段
+  $("#f_type").onchange=function(){$("#costRow").className="form-grid2 cost-row"+(this.value==="降本"?" show":"")};
+  $("#appendBtn").onclick=handleAppendNote;
+  showMask("#editModal");
+}
+
+function renderNotesList(t){
+  if(!t||!t.notes.length)return '<div class="notes-empty">暂无备注，在下方追加</div>';
+  return t.notes.map(function(n,i){
+    return '<div class="note-item"><div class="note-date-col">'+(n.date?formatDateFull(n.date):"无日期")+'</div><div class="note-text-col">'+escapeHtml(n.text)+'</div><button class="note-del" data-delnote="'+i+'">删除</button></div>';
+  }).join("");
+}
+
+function handleAppendNote(){
+  var d=$("#appendDate").value;
+  var txt=$("#appendText").value.trim();
+  if(!txt){showToast("请输入备注内容","error");return}
+  var t=editingId?findById(editingId):_draftTask();
+  if(!t.notes)t.notes=[];
+  t.notes.push({date:d||null,text:txt});
+  t.updatedAt=nowISO();
+  if(!editingId){_draft=t}
+  $("#notesList").innerHTML=renderNotesList(t);
+  $("#appendText").value="";
+  // 不立即存入 state（新建时存草稿），保存时统一提交
+}
+
+var _draft=null;
+function _draftTask(){
+  if(_draft)return _draft;
+  _draft={id:genId(),type:"新品-日常",title:"",owner:"周晓源",proposedAt:null,requiredAt:null,status:"进行中",notes:[],costSaving:null,createdAt:nowISO(),updatedAt:nowISO()};
+  return _draft;
+}
+
+function saveTaskFromForm(){
+  var title=$("#f_title").value.trim();
+  if(!title){showToast("请填写事项标题","error");return}
+  var type=$("#f_type").value;
+  var owner=$("#f_owner").value.trim()||"周晓源";
+  var status=$("#f_status").value;
+  var proposed=$("#f_proposed").value||null;
+  var required=$("#f_required").value||null;
+  var cost=null;
+  if(type==="降本"){
+    var cval=parseFloat($("#f_cost").value);
+    var rval=parseFloat($("#f_reduce").value);
+    if(!isNaN(cval)||!isNaN(rval)){
+      cost={annualAmountWan:isNaN(cval)?null:cval,reductionPercent:isNaN(rval)?null:rval,rawText:null};
+    }
+  }
+  var t;
+  if(editingId){
+    t=findById(editingId);
+    t.title=title;t.type=type;t.owner=owner;t.status=status;
+    t.proposedAt=proposed;t.requiredAt=required;t.costSaving=cost;
+    t.updatedAt=nowISO();
+  }else{
+    t=_draft||_draftTask();
+    t.title=title;t.type=type;t.owner=owner;t.status=status;
+    t.proposedAt=proposed;t.requiredAt=required;t.costSaving=cost;
+    t.createdAt=t.createdAt||nowISO();t.updatedAt=nowISO();
+    state.tasks.push(t);
+  }
+  _draft=null;
+  markDirty();
+  hideMask("#editModal");
+  renderAll();
+  showToast("已保存到内存，记得点右上角「保存」下载文件","success");
+}
+
+function deleteTask(id){
+  if(!confirm("确定删除此任务？此操作不可撤销（保存文件前可恢复）。"))return;
+  var idx=state.tasks.findIndex(function(t){return t.id===id});
+  if(idx>=0){state.tasks.splice(idx,1);markDirty();hideMask("#editModal");renderAll();showToast("已删除","success")}
+}
+
+function deleteNote(taskId,noteIdx){
+  var t=findById(taskId);
+  if(!t||!t.notes)return;
+  t.notes.splice(noteIdx,1);
+  t.updatedAt=nowISO();
+  if(editingId===taskId){$("#notesList").innerHTML=renderNotesList(t)}
+  markDirty();
+}
+
+function changeStatus(taskId,newStatus){
+  var t=findById(taskId);
+  if(!t||t.status===newStatus)return;
+  t.status=newStatus;t.updatedAt=nowISO();
+  markDirty();renderAll();
+}
+
+function findById(id){return state.tasks.find(function(t){return t.id===id})}
+
+/* ============ 拖拽 ============ */
+var dragId=null;
+function bindDragDrop(){
+  document.addEventListener("dragstart",function(e){
+    var card=e.target.closest(".card");
+    if(!card)return;
+    dragId=card.dataset.id;card.style.opacity=".4";
+  });
+  document.addEventListener("dragend",function(e){
+    var card=e.target.closest(".card");
+    if(card)card.style.opacity="";
+    $all(".col-body").forEach(function(c){c.classList.remove("drop-active")});
+  });
+  document.addEventListener("dragover",function(e){
+    var body=e.target.closest(".col-body");
+    if(body){e.preventDefault();body.classList.add("drop-active")}
+  });
+  document.addEventListener("dragleave",function(e){
+    var body=e.target.closest(".col-body");
+    if(body&&!body.contains(e.relatedTarget))body.classList.remove("drop-active");
+  });
+  document.addEventListener("drop",function(e){
+    var body=e.target.closest(".col-body");
+    if(!body||!dragId)return;
+    e.preventDefault();
+    body.classList.remove("drop-active");
+    var newStatus=body.dataset.drop;
+    changeStatus(dragId,newStatus);
+    dragId=null;
+  });
+}
+
+/* ============ 跳转高亮 ============ */
+function jumpTo(id){
+  var t=findById(id);
+  if(!t)return;
+  // 若该任务被筛选隐藏，先清空筛选
+  if(!taskMatchesFilters(t)){filters={search:"",type:"",status:""};$("#searchInput").value="";$("#typeFilter").value="";$("#statusFilter").value="";renderKanban()}
+  var card=document.querySelector('.card[data-id="'+id+'"]');
+  if(card){
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+    card.classList.add("flash");
+    setTimeout(function(){card.classList.remove("flash")},1700);
+  }
+}
+
+/* ============ 汇总 ============ */
+function openSummary(){
+  var end=todayISO();
+  var start=end.slice(0,8)+"01";
+  $("#summaryBody").innerHTML=
+    '<div class="summary-controls">'
+      +'<label>开始 <input type="date" id="sumStart" value="'+start+'"></label>'
+      +'<label>结束 <input type="date" id="sumEnd" value="'+end+'"></label>'
+      +'<button class="btn btn-primary" id="sumQuery">查询</button>'
+    +'</div>'
+    +'<div id="sumResult"></div>';
+  $("#sumQuery").onclick=runSummary;
+  runSummary();
+  showMask("#summaryModal");
+}
+function runSummary(){
+  var s=parseDateNum($("#sumStart").value);
+  var e=parseDateNum($("#sumEnd").value);
+  if(!s||!e){$("#sumResult").innerHTML='<p style="color:#999">请选择时间段</p>';return}
+  var added=[],finished=[],notes=[];
+  var cost=0;
+  state.tasks.forEach(function(t){
+    if(parseDateNum(t.proposedAt)>=s&&parseDateNum(t.proposedAt)<=e)added.push(t);
+    if(t.status==="已完结"){
+      var ld=lastNoteDate(t);
+      if(ld&&parseDateNum(ld)>=s&&parseDateNum(ld)<=e)finished.push(t);
+    }
+    (t.notes||[]).forEach(function(n){
+      if(n.date&&parseDateNum(n.date)>=s&&parseDateNum(n.date)<=e)notes.push({task:t,note:n});
+    });
+    if(t.costSaving&&t.costSaving.annualAmountWan)cost+=t.costSaving.annualAmountWan;
+  });
+  var html='<div class="summary-totals">'
+    +'<div class="summary-total"><div class="n">'+added.length+'</div><div class="t">时段新增任务</div></div>'
+    +'<div class="summary-total"><div class="n">'+finished.length+'</div><div class="t">时段完结任务</div></div>'
+    +'<div class="summary-total"><div class="n">'+notes.length+'</div><div class="t">时段追加备注</div></div>'
+    +'<div class="summary-total cost"><div class="n">'+cost.toFixed(1)+'</div><div class="t">降本年省合计(万)</div></div>'
+    +'</div>';
+  html+='<div class="summary-group"><h5>新增任务 ('+added.length+')</h5>';
+  html+=added.length?added.map(function(t){return '<div class="summary-item"><span class="si-title">'+escapeHtml(t.title)+'</span><span class="si-date">'+formatDate(t.proposedAt)+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  html+='<div class="summary-group"><h5>完结任务 ('+finished.length+')</h5>';
+  html+=finished.length?finished.map(function(t){return '<div class="summary-item"><span class="si-title">'+escapeHtml(t.title)+'</span><span class="si-date">'+formatDate(lastNoteDate(t))+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  html+='<div class="summary-group"><h5>进度备注 ('+notes.length+')</h5>';
+  notes.sort(function(a,b){return parseDateNum(a.note.date)-parseDateNum(b.note.date)});
+  html+=notes.length?notes.map(function(it){return '<div class="summary-item"><span class="si-title">['+escapeHtml(truncate(it.task.title,18))+'] '+escapeHtml(truncate(it.note.text,50))+'</span><span class="si-date">'+formatDate(it.note.date)+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  $("#sumResult").innerHTML=html;
+}
+
+/* ============ CSV 导入 ============ */
+function parseCSV(text){
+  var rows=[],row=[],field="",inQ=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(inQ){
+      if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else inQ=false}
+      else field+=c;
+    }else{
+      if(c==='"')inQ=true;
+      else if(c===","){row.push(field);field=""}
+      else if(c==="\n"){row.push(field);rows.push(row);row=[];field=""}
+      else if(c==="\r"){}
+      else field+=c;
+    }
+  }
+  if(field||row.length){row.push(field);rows.push(row)}
+  return rows;
+}
+function csvToDate(raw){
+  if(!raw)return null;var s=String(raw).trim();if(!s||s.charAt(0)==="=")return null;
+  var m=s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);if(m)return m[1]+"-"+pad2(m[2])+"-"+pad2(m[3]);
+  m=s.match(/^(\d{1,2})月(\d{1,2})日/);if(m)return "2026-"+pad2(m[1])+"-"+pad2(m[2]);
+  return null;
+}
+function csvParseNotes(txt){
+  if(!txt)return[];
+  var lines=txt.split(/\r?\n/),notes=[],cur=null;
+  lines.forEach(function(line){
+    var m=line.match(/^(\d{4})\s*(.*)$/);
+    var isDate=false,d=null;
+    if(m){var mm=parseInt(m[1].slice(0,2)),dd=parseInt(m[1].slice(2,4));if(mm>=1&&mm<=12&&dd>=1&&dd<=31){d="2026-"+pad2(mm)+"-"+pad2(dd);isDate=true}}
+    if(isDate){if(cur)notes.push(cur);cur={date:d,text:m[2]}}
+    else{if(cur)cur.text+=(cur.text?"\n":"")+line;else if(line.trim())cur={date:null,text:line}}
+  });
+  if(cur)notes.push(cur);
+  return notes;
+}
+function handleCSVImport(file){
+  var reader=new FileReader();
+  reader.onload=function(){
+    var rows=parseCSV(reader.result);
+    var imported=0;
+    for(var i=1;i<rows.length;i++){
+      var r=rows[i];while(r.length<8)r.push("");
+      var type=(r[1]||"").trim(),title=(r[2]||"").trim();
+      if(!type&&!title)continue;
+      var proposed=csvToDate(r[4]),required=csvToDate(r[5]);
+      var st=(r[7]||"").trim();
+      var status=st==="完结"?"已完结":st==="暂待"?"暂待":st==="取消"?"取消":"进行中";
+      var notes=csvParseNotes(r[6]||"");
+      var upd=notes.length&&notes[notes.length-1].date?notes[notes.length-1].date:proposed;
+      state.tasks.push({id:genId(),type:type,title:title,owner:(r[3]||"").trim()||"周晓源",proposedAt:proposed,requiredAt:required,status:status,notes:notes,costSaving:null,createdAt:proposed?proposed+"T00:00:00.000Z":nowISO(),updatedAt:upd?upd+"T00:00:00.000Z":nowISO()});
+      imported++;
+    }
+    markDirty();renderAll();
+    showToast("已导入 "+imported+" 条任务，记得保存","success");
+  };
+  reader.readAsText(file,"utf-8");
+}
+
+/* ============ 弹窗控制 ============ */
+function showMask(sel){$(sel).classList.remove("hidden")}
+function hideMask(sel){$(sel).classList.add("hidden")}
+
+/* ============ 事件绑定 ============ */
+function bindEvents(){
+  // 卡片点击 / 列折叠 / 删除备注（委托）
+  $("#kanban").addEventListener("click",function(e){
+    var toggle=e.target.closest("[data-toggle]");
+    if(toggle){var st=toggle.dataset.toggle;collapsedCols[st]=!collapsedCols[st];renderKanban();return}
+    var card=e.target.closest(".card");
+    if(card)openEditor(card.dataset.id);
+  });
+  // 时间线跳转
+  $("#timeline").addEventListener("click",function(e){
+    var it=e.target.closest("[data-jump]");if(it)jumpTo(it.dataset.jump);
+  });
+  // 备注删除（弹窗内）
+  $("#editBody").addEventListener("click",function(e){
+    var b=e.target.closest("[data-delnote]");
+    if(b&&editingId)deleteNote(editingId,parseInt(b.dataset.delnote));
+  });
+  // 搜索
+  var st;
+  $("#searchInput").addEventListener("input",function(){clearTimeout(st);st=setTimeout(function(){filters.search=$("#searchInput").value.trim();applyFilters()},200)});
+  $("#typeFilter").addEventListener("change",function(){filters.type=this.value;applyFilters()});
+  $("#statusFilter").addEventListener("change",function(){filters.status=this.value;applyFilters()});
+  $("#clearFilterBtn").onclick=function(){filters={search:"",type:"",status:""};$("#searchInput").value="";$("#typeFilter").value="";$("#statusFilter").value="";applyFilters()};
+  // 按钮
+  $("#newBtn").onclick=function(){_draft=null;openEditor(null)};
+  $("#saveTaskBtn").onclick=saveTaskFromForm;
+  $("#deleteBtn").onclick=function(){if(editingId)deleteTask(editingId)};
+  $("#saveBtn").onclick=exportHTML;
+  $("#summaryBtn").onclick=openSummary;
+  $("#importBtn").onclick=function(){$("#csvFile").click()};
+  $("#csvFile").onchange=function(){if(this.files[0]){handleCSVImport(this.files[0]);this.value=""}};
+  $("#printBtn").onclick=function(){window.print()};
+  // 关闭弹窗
+  $all("[data-close]").forEach(function(el){el.onclick=function(){el.closest(".modal-mask").classList.add("hidden");_draft=null}});
+  $all(".modal-mask").forEach(function(m){m.addEventListener("click",function(e){if(e.target===m){m.classList.add("hidden");_draft=null}})});
+  // 关闭前提醒
+  window.addEventListener("beforeunload",function(e){if(isDirty){e.preventDefault();e.returnValue="";return""}});
+  // 键盘 ESC 关弹窗
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"){$all(".modal-mask:not(.hidden)").forEach(function(m){m.classList.add("hidden");_draft=null})}});
+}
+
+/* ============ 初始化 ============ */
+function init(){
+  state=loadDataFromFile();
+  // 填充类型筛选
+  var tf=$("#typeFilter");
+  TYPES.forEach(function(tp){var o=document.createElement("option");o.value=tp;o.textContent=tp;tf.appendChild(o)});
+  bindEvents();
+  bindDragDrop();
+  checkBufferOnLoad();
+  renderAll();
+  updateDirtyUI();
+  // 工具栏 sticky top 跟随统计区实际高度
+  var sb=$("#statsBar");
+  if(sb)$("#toolbar").style.top=sb.offsetHeight+"px";
+  window.addEventListener("resize",function(){var sb2=$("#statsBar");if(sb2)$("#toolbar").style.top=sb2.offsetHeight+"px"});
+}
+init();
+})();
+</script>
+
+
+</body></html>
