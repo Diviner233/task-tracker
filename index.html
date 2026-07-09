@@ -199,7 +199,6 @@ input,select,textarea{font-family:inherit;font-size:14px}
   <button class="btn" id="summaryBtn">汇总</button>
   <button class="btn" id="importBtn">导入CSV</button>
   <button class="btn" id="newBtn">＋新建</button>
-  <button class="btn btn-save" id="saveBtn">💾 保存</button>
   <button class="btn btn-sync" id="syncBtn">☁️ 同步</button>
   <button class="btn btn-settings" id="settingsBtn" title="GitHub同步设置">⚙️</button>
   <span class="sync-status" id="syncStatus"></span>
@@ -276,7 +275,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
   </div>
 </div>
 
-<div class="toast" id="toast">已保存到内存，记得点右上角「保存」下载文件</div>
+<div class="toast" id="toast">已修改，记得点「☁️ 同步」推送到 GitHub</div>
 
 <!-- ===== 数据块 ===== -->
 <script type="application/json" id="taskboard-data">
@@ -2314,7 +2313,7 @@ function saveTaskFromForm(){
   markDirty();
   hideMask("#editModal");
   renderAll();
-  showToast("已保存到内存，记得点右上角「保存」下载文件","success");
+  showToast("已保存，记得点「☁️ 同步」推送到 GitHub","success");
 }
 
 function deleteTask(id){
