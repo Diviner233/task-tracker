@@ -2072,52 +2072,6 @@ function fetchOriginalHTML(){
   return null;
 }
 
-function exportHTML(){
-  state.lastSavedAt=nowISO();
-  var jsonStr=JSON.stringify(state,null,2);
-  // 转义 closing-script-tag 防止数据块提前结束
-  var safeJson=jsonStr.replace(/<\/(script)/gi,"<\\/$1");
-  // 先把最新数据写回 DOM 数据块（保证 outerHTML fallback 也能拿到最新数据）
-  var dataEl=document.getElementById("taskboard-data");
-  if(dataEl)dataEl.textContent=safeJson;
-  // 构造数据块；闭合标签拆开写避免本脚本块提前结束
-  var openTag='<script type="application/json" id="taskboard-data">';
-  var closeTag='<\/'+'script>';
-  var newDataBlock=openTag+"\n"+safeJson+"\n"+closeTag;
-
-  var originalHTML=fetchOriginalHTML();
-  if(!originalHTML){
-    // fallback：用 DOM 序列化（此时数据块已更新为最新）
-    originalHTML="<!DOCTYPE html>\n"+document.documentElement.outerHTML;
-  }
-
-  var RE=/<script\s+type="application\/json"\s+id="taskboard-data">[\s\S]*?<\/script>/i;
-  var newHTML;
-  if(RE.test(originalHTML)){
-    newHTML=originalHTML.replace(RE,function(){return newDataBlock});
-  }else{
-    newHTML=originalHTML.replace(/<\/body>/i,function(){return newDataBlock+"\n</body>"});
-  }
-
-  downloadBlob(newHTML,getFileName(),"text/html");
-  markClean();
-  syncBufferAfterSave();
-  renderAll();
-  // 禁用按钮防重复
-  var btn=$("#saveBtn");btn.disabled=true;btn.textContent="已保存 ✓";
-  setTimeout(function(){btn.disabled=false;btn.textContent="💾 保存"},1200);
-  showToast("已保存，请用下载的新文件覆盖旧文件","success");
-}
-
-function downloadBlob(content,filename,mime){
-  var blob=new Blob([content],{type:(mime||"text/plain")+";charset=utf-8"});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement("a");
-  a.href=url;a.download=filename;
-  document.body.appendChild(a);a.click();
-  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url)},150);
-}
-
 /* ============ 渲染 ============ */
 function renderAll(){renderStats();renderTimeline();renderKanban()}
 
