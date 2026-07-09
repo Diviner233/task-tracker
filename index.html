@@ -179,7 +179,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
 <div class="stats-bar" id="statsBar"><div class="stat doing"><span class="num">15</span><span class="lbl">进行中</span></div><div class="stat wait"><span class="num">2</span><span class="lbl">暂待</span></div><div class="stat done"><span class="num">32</span><span class="lbl">已完结</span></div><div class="stat cancel"><span class="num">6</span><span class="lbl">取消</span></div><div class="stat overdue"><span class="num">0</span><span class="lbl">逾期</span></div><div class="stat cost"><span class="num">137.0</span><span class="lbl">降本年省(万)</span></div><div class="stat"><span class="num">55</span><span class="lbl">总计</span></div></div>
 <div class="toolbar" id="toolbar" style="top: 80px;">
   <div class="search"><input type="text" id="searchInput" placeholder="搜索事项或进度备注…"></div>
-  <select class="select" id="typeFilter"><option value="">全部类型</option><option value="新品-日常">新品-日常</option><option value="新品-重点关注">新品-重点关注</option><option value="降本">降本</option><option value="其他-日常">其他-日常</option><option value="其他-重点关注">其他-重点关注</option><option value="保供-材料波动">保供-材料波动</option><option value="新品-日常">新品-日常</option><option value="新品-重点关注">新品-重点关注</option><option value="降本">降本</option><option value="其他-日常">其他-日常</option><option value="其他-重点关注">其他-重点关注</option><option value="保供-材料波动">保供-材料波动</option></select>
+  <select class="select" id="typeFilter"><option value="">全部类型</option></select>
   <select class="select" id="statusFilter">
     <option value="">全部状态</option>
     <option value="进行中">进行中</option>
@@ -2110,6 +2110,7 @@ function handleAppendNote(){
   t.notes.push({date:d||null,text:txt});
   t.updatedAt=nowISO();
   if(!editingId){_draft=t}
+  else{markDirty()}
   $("#notesList").innerHTML=renderNotesList(t);
   $("#appendText").value="";
   // 不立即存入 state（新建时存草稿），保存时统一提交
@@ -2253,18 +2254,20 @@ function runSummary(){
     if(parseDateNum(t.proposedAt)>=s&&parseDateNum(t.proposedAt)<=e)added.push(t);
     if(t.status==="已完结"){
       var ld=lastNoteDate(t);
-      if(ld&&parseDateNum(ld)>=s&&parseDateNum(ld)<=e)finished.push(t);
+      if(ld&&parseDateNum(ld)>=s&&parseDateNum(ld)<=e){
+        finished.push(t);
+        if(t.costSaving&&t.costSaving.annualAmountWan)cost+=t.costSaving.annualAmountWan;
+      }
     }
     (t.notes||[]).forEach(function(n){
       if(n.date&&parseDateNum(n.date)>=s&&parseDateNum(n.date)<=e)notes.push({task:t,note:n});
     });
-    if(t.costSaving&&t.costSaving.annualAmountWan)cost+=t.costSaving.annualAmountWan;
   });
   var html='<div class="summary-totals">'
     +'<div class="summary-total"><div class="n">'+added.length+'</div><div class="t">时段新增任务</div></div>'
     +'<div class="summary-total"><div class="n">'+finished.length+'</div><div class="t">时段完结任务</div></div>'
     +'<div class="summary-total"><div class="n">'+notes.length+'</div><div class="t">时段追加备注</div></div>'
-    +'<div class="summary-total cost"><div class="n">'+cost.toFixed(1)+'</div><div class="t">降本年省合计(万)</div></div>'
+    +'<div class="summary-total cost"><div class="n">'+cost.toFixed(1)+'</div><div class="t">时段完结降本(万)</div></div>'
     +'</div>';
   html+='<div class="summary-group"><h5>新增任务 ('+added.length+')</h5>';
   html+=added.length?added.map(function(t){return '<div class="summary-item"><span class="si-title">'+escapeHtml(t.title)+'</span><span class="si-date">'+formatDate(t.proposedAt)+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
@@ -2360,7 +2363,10 @@ function bindEvents(){
   // 备注删除（弹窗内）
   $("#editBody").addEventListener("click",function(e){
     var b=e.target.closest("[data-delnote]");
-    if(b&&editingId)deleteNote(editingId,parseInt(b.dataset.delnote));
+    if(!b)return;
+    var idx=parseInt(b.dataset.delnote);
+    if(editingId){deleteNote(editingId,idx)}
+    else if(_draft&&_draft.notes){_draft.notes.splice(idx,1);$("#notesList").innerHTML=renderNotesList(_draft)}
   });
   // 搜索
   var st;
@@ -2389,8 +2395,9 @@ function bindEvents(){
 /* ============ 初始化 ============ */
 function init(){
   state=loadDataFromFile();
-  // 填充类型筛选
+  // 填充类型筛选（先清空防止重复）
   var tf=$("#typeFilter");
+  tf.innerHTML='<option value="">全部类型</option>';
   TYPES.forEach(function(tp){var o=document.createElement("option");o.value=tp;o.textContent=tp;tf.appendChild(o)});
   bindEvents();
   bindDragDrop();
