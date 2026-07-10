@@ -202,6 +202,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
   <button class="btn btn-sync" id="syncBtn">☁️ 同步</button>
   <button class="btn btn-settings" id="settingsBtn" title="GitHub同步设置">⚙️</button>
   <span class="sync-status" id="syncStatus"></span>
+  <span class="sync-status" id="lastSyncTime" style="display:none"></span>
   <input type="file" id="csvFile" accept=".csv" style="display:none">
 </div>
 <div class="timeline-wrap">
@@ -281,7 +282,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
 <script type="application/json" id="taskboard-data">
 {
   "version": "1.0",
-  "lastSavedAt": "2026-07-10T01:42:47.769Z",
+  "lastSavedAt": "2026-06-21T05:12:33.980Z",
   "source": "工作记录.csv",
   "typeColors": {
     "新品-日常": "#74b9ff",
@@ -666,10 +667,6 @@ input,select,textarea{font-family:inherit;font-size:14px}
         {
           "date": "2026-06-09",
           "text": "和曹阳沟通，统计了一下，考虑是否要把零散的都切给佳诺威"
-        },
-        {
-          "date": "2026-07-09",
-          "text": "do big了，佳诺威降30/立方，广西丰林降到1600起。。。算下来，佳诺威便宜十几万，丰林便宜30多万。。。等领导回来汇报一下吧"
         }
       ],
       "costSaving": {
@@ -678,7 +675,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
         "rawText": null
       },
       "createdAt": "2026-04-30T00:00:00.000Z",
-      "updatedAt": "2026-07-09T09:14:34.581Z"
+      "updatedAt": "2026-06-21T05:06:54.342Z"
     },
     {
       "id": "t_13",
@@ -1973,6 +1970,35 @@ function updateSyncStatus(){
     el.textContent="未配置";
   }
 }
+function updateLastSyncTime(){
+  var el=$("#lastSyncTime");
+  if(!el)return;
+  var ts=state.lastSavedAt;
+  if(!ts){el.style.display="none";return}
+  var d=new Date(ts);
+  var str="同步于 "+(d.getMonth()+1)+"月"+d.getDate()+"日 "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  el.className="sync-status ok";
+  el.textContent=str;
+  el.style.display="";
+}
+function checkRemoteVersion(){
+  if(!ghConfigValid())return;
+  var cfg=getGhConfig();
+  var apiBase="https://api.github.com/repos/"+cfg.repo+"/contents/"+cfg.path;
+  fetch(apiBase+"?ref="+encodeURIComponent(cfg.branch),{
+    headers:{"Accept":"application/vnd.github.v3+json"}
+  }).then(function(r){if(!r.ok)throw new Error("fetch failed");return r.json()}).then(function(info){
+    var content=decodeURIComponent(escape(atob(info.content.replace(/\n/g,""))));
+    var m=content.match(/"lastSavedAt":\s*"([^"]+)"/);
+    if(!m)return;
+    var remoteTs=m[1];
+    var localTs=state.lastSavedAt||"";
+    if(remoteTs>localTs){
+      showToast("检测到远程有更新，3秒后自动刷新…","info");
+      setTimeout(function(){location.reload(true)},3000);
+    }
+  }).catch(function(){});
+}
 function openGhSettings(){
   var c=getGhConfig();
   $("#gh_token").value=c.token||"";
@@ -2051,6 +2077,7 @@ function syncToGitHub(){
     syncBufferAfterSave();
     renderAll();
     btn.disabled=false;btn.textContent="☁️ 同步";
+    updateLastSyncTime();
     showToast("已同步到 GitHub，Pages 1-2 分钟后更新","success");
   }).catch(function(err){
     btn.disabled=false;btn.textContent="☁️ 同步";
@@ -2522,6 +2549,8 @@ function init(){
   renderAll();
   updateDirtyUI();
   updateSyncStatus();
+  updateLastSyncTime();
+  setTimeout(checkRemoteVersion,2000);
   // 工具栏 sticky top 跟随统计区实际高度
   var sb=$("#statsBar");
   if(sb)$("#toolbar").style.top=sb.offsetHeight+"px";
