@@ -86,9 +86,11 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .col-wait{border-top:3px solid var(--wait)}
 .col-done{border-top:3px solid var(--done)}
 .col-cancel{border-top:3px solid var(--cancel)}
-.column.collapsed{flex:0 0 48px;min-width:48px}
-.column.collapsed .col-head{writing-mode:vertical-rl;text-orientation:upright;padding:10px 6px;flex-direction:column;gap:6px}
-.column.collapsed .col-toggle{transform:rotate(90deg)}
+.column.collapsed{flex:0 0 56px;min-width:56px}
+.column.collapsed .col-head{flex-direction:column;gap:4px;padding:10px 4px;text-align:center}
+.column.collapsed .col-title{font-size:12px;writing-mode:vertical-rl;text-orientation:upright}
+.column.collapsed .col-badge{font-size:11px}
+.column.collapsed .col-toggle{transform:rotate(0deg)}
 .col-body{padding:4px 8px 10px;overflow-y:auto;flex:1}
 .col-body.drop-active{background:#e3eaf2;outline:2px dashed var(--doing);outline-offset:-4px}
 .cards-empty{text-align:center;color:var(--text2);font-size:12px;padding:24px 8px}
@@ -176,7 +178,9 @@ input,select,textarea{font-family:inherit;font-size:14px}
 
 @media(max-width:900px){
   .kanban{flex-direction:column}
-  .column{max-height:none}
+  .column{max-height:none;flex:1 1 auto !important;min-width:100% !important}
+  .column.col-doing{flex:1 1 auto !important}
+  .column.collapsed{flex:0 0 56px !important;min-width:56px !important}
   .toolbar{top:auto;position:relative}
   .stats-bar{position:relative}
 }
