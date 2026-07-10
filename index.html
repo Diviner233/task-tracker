@@ -73,7 +73,10 @@ input,select,textarea{font-family:inherit;font-size:14px}
 
 /* ===== 看板 ===== */
 .kanban{display:flex;gap:12px;padding:14px 16px;align-items:flex-start;min-height:calc(100vh - 200px)}
-.column{flex:1;min-width:260px;background:#eef2f7;border-radius:var(--radius);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
+.column{flex:1;min-width:200px;background:#eef2f7;border-radius:var(--radius);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
+.column.col-doing{flex:2.5;min-width:340px}
+.column.col-wait{flex:1.2}
+.column.col-done,.column.col-cancel{flex:0 0 180px}
 .column.collapsed .col-body{display:none}
 .col-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;user-select:none;position:sticky;top:0;z-index:5}
 .col-head .col-title{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
@@ -83,6 +86,9 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .col-wait{border-top:3px solid var(--wait)}
 .col-done{border-top:3px solid var(--done)}
 .col-cancel{border-top:3px solid var(--cancel)}
+.column.collapsed{flex:0 0 48px;min-width:48px}
+.column.collapsed .col-head{writing-mode:vertical-rl;text-orientation:upright;padding:10px 6px;flex-direction:column;gap:6px}
+.column.collapsed .col-toggle{transform:rotate(90deg)}
 .col-body{padding:4px 8px 10px;overflow-y:auto;flex:1}
 .col-body.drop-active{background:#e3eaf2;outline:2px dashed var(--doing);outline-offset:-4px}
 .cards-empty{text-align:center;color:var(--text2);font-size:12px;padding:24px 8px}
@@ -99,6 +105,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .card-meta .tag{background:#eef2f7;padding:1px 6px;border-radius:3px}
 .card-meta .req{color:var(--overdue);font-weight:600}
 .card-note{font-size:11px;color:#5a6b7b;background:#f8fafc;padding:5px 7px;border-radius:4px;line-height:1.45;max-height:54px;overflow:hidden;position:relative}
+.col-doing .card-note{max-height:72px}
 .card-note .note-date{font-weight:600;color:var(--text2)}
 .card-note::after{content:"";position:absolute;bottom:0;left:0;right:0;height:14px;background:linear-gradient(transparent,#f8fafc)}
 .type-bar{width:4px}
@@ -282,7 +289,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
 <script type="application/json" id="taskboard-data">
 {
   "version": "1.0",
-  "lastSavedAt": "2026-07-10T03:44:09.841Z",
+  "lastSavedAt": "2026-07-10T01:42:47.769Z",
   "source": "工作记录.csv",
   "typeColors": {
     "新品-日常": "#74b9ff",
@@ -504,19 +511,11 @@ input,select,textarea{font-family:inherit;font-size:14px}
         {
           "date": "2026-05-28",
           "text": "测试ing，预计6月20日"
-        },
-        {
-          "date": "2026-07-10",
-          "text": "省本7.4，但是凯理的能省20.54，名门真的不够看"
         }
       ],
-      "costSaving": {
-        "annualAmountWan": 0,
-        "reductionPercent": null,
-        "rawText": null
-      },
+      "costSaving": null,
       "createdAt": "2026-04-20T00:00:00.000Z",
-      "updatedAt": "2026-07-10T03:44:07.959Z"
+      "updatedAt": "2026-05-28T00:00:00.000Z"
     },
     {
       "id": "t_8",
@@ -550,12 +549,12 @@ input,select,textarea{font-family:inherit;font-size:14px}
         }
       ],
       "costSaving": {
-        "annualAmountWan": 20.54,
+        "annualAmountWan": 28,
         "reductionPercent": null,
-        "rawText": null
+        "rawText": "预计收益28w"
       },
       "createdAt": "2026-04-08T00:00:00.000Z",
-      "updatedAt": "2026-07-10T03:42:59.876Z"
+      "updatedAt": "2026-05-28T00:00:00.000Z"
     },
     {
       "id": "t_9",
@@ -677,8 +676,8 @@ input,select,textarea{font-family:inherit;font-size:14px}
           "text": "和曹阳沟通，统计了一下，考虑是否要把零散的都切给佳诺威"
         },
         {
-          "date": "2026-07-10",
-          "text": "之前说汇总一下供应商，就算结束了。"
+          "date": "2026-07-09",
+          "text": "do big了，佳诺威降30/立方，广西丰林降到1600起。。。算下来，佳诺威便宜十几万，丰林便宜30多万。。。等领导回来汇报一下吧"
         }
       ],
       "costSaving": {
@@ -687,7 +686,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
         "rawText": null
       },
       "createdAt": "2026-04-30T00:00:00.000Z",
-      "updatedAt": "2026-07-10T03:38:43.407Z"
+      "updatedAt": "2026-07-09T09:14:34.581Z"
     },
     {
       "id": "t_13",
@@ -1002,15 +1001,11 @@ input,select,textarea{font-family:inherit;font-size:14px}
         {
           "date": "2026-06-18",
           "text": "又来了，调整完了，已交接至忠皓测试"
-        },
-        {
-          "date": "2026-07-10",
-          "text": "前几天出了新报告，还是不行，100%不合格，各种变形。德必隆查证中"
         }
       ],
       "costSaving": null,
       "createdAt": "2026-04-07T00:00:00.000Z",
-      "updatedAt": "2026-07-10T02:34:40.640Z"
+      "updatedAt": "2026-06-18T00:00:00.000Z"
     },
     {
       "id": "t_22",
@@ -1298,7 +1293,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       "owner": "周晓源",
       "proposedAt": "2026-04-15",
       "requiredAt": null,
-      "status": "已完结",
+      "status": "进行中",
       "notes": [
         {
           "date": "2026-04-22",
@@ -1307,7 +1302,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       ],
       "costSaving": null,
       "createdAt": "2026-04-15T00:00:00.000Z",
-      "updatedAt": "2026-07-10T02:34:57.210Z"
+      "updatedAt": "2026-04-22T00:00:00.000Z"
     },
     {
       "id": "t_33",
@@ -1669,19 +1664,11 @@ input,select,textarea{font-family:inherit;font-size:14px}
         {
           "date": "2026-06-12",
           "text": "又谈了一下，最低能到1670，"
-        },
-        {
-          "date": "2026-07-10",
-          "text": "佳诺威降30/立方，广西丰林降到1600起。。。算下来，佳诺威便宜十几万，丰林便宜59万。。。25年总采购额才588万，等领导回来汇报一下吧"
         }
       ],
-      "costSaving": {
-        "annualAmountWan": 59,
-        "reductionPercent": null,
-        "rawText": null
-      },
+      "costSaving": null,
       "createdAt": "2026-05-20T00:00:00.000Z",
-      "updatedAt": "2026-07-10T03:38:19.427Z"
+      "updatedAt": "2026-06-12T00:00:00.000Z"
     },
     {
       "id": "t_47",
@@ -1691,7 +1678,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       "owner": "周晓源",
       "proposedAt": "2026-05-20",
       "requiredAt": null,
-      "status": "暂待",
+      "status": "进行中",
       "notes": [
         {
           "date": "2026-05-20",
@@ -1700,7 +1687,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       ],
       "costSaving": null,
       "createdAt": "2026-05-20T00:00:00.000Z",
-      "updatedAt": "2026-07-10T02:35:06.478Z"
+      "updatedAt": "2026-05-20T00:00:00.000Z"
     },
     {
       "id": "t_48",
@@ -1742,15 +1729,11 @@ input,select,textarea{font-family:inherit;font-size:14px}
         {
           "date": "2026-06-16",
           "text": "节后出价格，已在同步画图设计"
-        },
-        {
-          "date": "2026-07-10",
-          "text": "昨天螺丝已到，下周等哥尼迪的新螺丝+盖子到了之后一并测试。已同频史苗福"
         }
       ],
       "costSaving": null,
       "createdAt": "2026-06-05T00:00:00.000Z",
-      "updatedAt": "2026-07-10T02:35:54.581Z"
+      "updatedAt": "2026-06-16T00:00:00.000Z"
     },
     {
       "id": "t_50",
@@ -1760,7 +1743,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       "owner": "周晓源",
       "proposedAt": "2026-06-11",
       "requiredAt": null,
-      "status": "已完结",
+      "status": "进行中",
       "notes": [
         {
           "date": "2026-06-11",
@@ -1769,7 +1752,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       ],
       "costSaving": null,
       "createdAt": "2026-06-11T00:00:00.000Z",
-      "updatedAt": "2026-07-10T02:35:15.261Z"
+      "updatedAt": "2026-06-11T00:00:00.000Z"
     },
     {
       "id": "t_51",
@@ -1896,7 +1879,7 @@ var state = null;       // {version,lastSavedAt,source,typeColors,tasks}
 var isDirty = false;
 var editingId = null;   // 当前编辑的任务id，null=新建
 var filters = { search:"", type:"", status:"" };
-var collapsedCols = {}; // 列折叠状态
+var collapsedCols = {"已完结":true,"取消":true}; // 列折叠状态（已完结、取消默认折叠）
 
 var STATUSES = ["进行中","暂待","已完结","取消"];
 var STATUS_KEY = {"进行中":"doing","暂待":"wait","已完结":"done","取消":"cancel"};
@@ -2202,7 +2185,9 @@ function renderCard(t){
   var noteHtml="";
   if(ln){
     var dt=ln.date?formatDate(ln.date)+" ":"";
-    noteHtml='<div class="card-note"><span class="note-date">'+escapeHtml(dt)+'</span>'+escapeHtml(truncate(ln.text,80))+'</div>';
+    var isDoing=(t.status==="进行中");
+    var maxLen=isDoing?120:80;
+    noteHtml='<div class="card-note"><span class="note-date">'+escapeHtml(dt)+'</span>'+escapeHtml(truncate(ln.text,maxLen))+'</div>';
   }
   return '<div class="card'+(od?" overdue":"")+'" draggable="true" data-id="'+t.id+'" style="border-left-color:'+typeColor(t.type)+'">'
     +(od?'<span class="card-overdue-badge">逾期'+odDays+'天</span>':"")
