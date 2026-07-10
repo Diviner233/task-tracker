@@ -60,17 +60,6 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .dirty-indicator .dot{width:8px;height:8px;border-radius:50%;background:#bbb}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ===== 时间线 ===== */
-.timeline-wrap{padding:10px 16px;background:#eef2f7;border-bottom:1px solid var(--border)}
-.timeline-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600}
-.timeline{display:flex;gap:8px;overflow-x:auto;overflow-y:visible;padding-bottom:6px;align-items:flex-start}
-.tl-item{flex:0 0 auto;min-height:62px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--doing);border-radius:6px;padding:6px 12px;max-width:240px;cursor:pointer;transition:.15s}
-.tl-item:hover{box-shadow:var(--shadow2);transform:translateY(-1px)}
-.tl-item .tl-date{font-size:11px;color:var(--text2);font-weight:600;margin-bottom:2px}
-.tl-item .tl-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
-.tl-item .tl-note{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.timeline-empty{font-size:12px;color:var(--text2);padding:8px 0}
-
 /* ===== 看板 ===== */
 .kanban{display:flex;gap:12px;padding:14px 16px;align-items:flex-start;min-height:calc(100vh - 200px)}
 .column{flex:1;min-width:200px;background:#eef2f7;border-radius:var(--radius);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
@@ -194,7 +183,6 @@ input,select,textarea{font-family:inherit;font-size:14px}
   .stat{min-width:64px;padding:4px 8px}
   .stat .num{font-size:18px}
   .stat .lbl{font-size:10px}
-  .timeline-wrap{padding:8px 12px}
   .modal{max-width:95vw !important;max-height:90vh !important}
   .modal-body{padding:12px !important}
   .form-grid2{grid-template-columns:1fr !important}
@@ -212,15 +200,12 @@ input,select,textarea{font-family:inherit;font-size:14px}
   .card-meta{font-size:10px;gap:4px}
   .card-note{font-size:10px;padding:4px 5px}
   .col-doing .card-note{max-height:60px}
-  .tl-item{max-width:180px;padding:4px 8px}
-  .tl-item .tl-title{font-size:11px}
-  .tl-item .tl-note{font-size:10px}
   .modal-body{padding:10px !important}
   .modal-head{padding:10px 12px}
   .modal-head h3{font-size:14px}
 }
 @media print{
-  .stats-bar,.toolbar,.timeline-wrap,.kanban,.modal-mask{display:none!important}
+  .stats-bar,.toolbar,.kanban,.modal-mask{display:none!important}
   .modal-mask{position:static;background:none;display:block!important;padding:0}
   .modal{box-shadow:none;max-width:100%;max-height:none;border:none}
   .modal-head,.modal-foot{position:static}
@@ -251,10 +236,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
   <span class="sync-status" id="lastSyncTime" style="display:none"></span>
   <input type="file" id="csvFile" accept=".csv" style="display:none">
 </div>
-<div class="timeline-wrap">
-  <div class="timeline-label">最近更新</div>
-  <div class="timeline" id="timeline"><div class="tl-item" data-jump="t_54" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">浮雕板二供</div><div class="tl-note">重新切了重新干</div></div><div class="tl-item" data-jump="t_33" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">门锁锌改铝</div><div class="tl-note">一体锁报价的时候也会同步报一下，看看差距，看看具体产品</div></div><div class="tl-item" data-jump="t_41" style="border-left-color:#6c5ce7"><div class="tl-date">26-06-21</div><div class="tl-title">舍凡膨胀螺丝二供</div><div class="tl-note">暂时不管了，</div></div><div class="tl-item" data-jump="t_22" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">螺丝整体比价</div><div class="tl-note">史苗福测过了还行，韩意思是安排200套给直营店测试，过了就直…</div></div><div class="tl-item" data-jump="t_13" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">准分子直采</div><div class="tl-note">追进度，说是要7月初</div></div><div class="tl-item" data-jump="t_12" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">密度板直采</div><div class="tl-note">和曹阳沟通，统计了一下，考虑是否要把零散的都切给佳诺威</div></div><div class="tl-item" data-jump="t_53" style="border-left-color:#fdcb6e"><div class="tl-date">26-06-21</div><div class="tl-title">三威喷粉板涨价</div><div class="tl-note">又来追了，问下领导</div></div><div class="tl-item" data-jump="t_52" style="border-left-color:#b2bec3"><div class="tl-date">26-06-21</div><div class="tl-title">富胜合同修改</div><div class="tl-note">先扛一下，供应商担保发货，阶段性付款</div></div><div class="tl-item" data-jump="t_51" style="border-left-color:#b2bec3"><div class="tl-date">26-06-21</div><div class="tl-title">美标物料是否取消</div><div class="tl-note">查了没有BOM，甘泉说胡志鹏通知的，只用一次，后面都用零售物…</div></div><div class="tl-item" data-jump="t_39" style="border-left-color:#b2bec3"><div class="tl-date">26-06-21</div><div class="tl-title">高林质保金</div><div class="tl-note">再次沟通，要到31年2月才能退，供方表示要走法律途径，已通告…</div></div><div class="tl-item" data-jump="t_55" style="border-left-color:#00b894"><div class="tl-date">26-06-21</div><div class="tl-title">三合一摸排</div><div class="tl-note">可以拿到成本分析，对照着看一下细节，同步拿到实物样品</div></div><div class="tl-item" data-jump="t_21" style="border-left-color:#74b9ff"><div class="tl-date">26-06-18</div><div class="tl-title">江南新花色-高光雪域金</div><div class="tl-note">又来了，调整完了，已交接至忠皓测试</div></div><div class="tl-item" data-jump="t_49" style="border-left-color:#0984e3"><div class="tl-date">26-06-16</div><div class="tl-title">慧鱼螺丝</div><div class="tl-note">节后出价格，已在同步画图设计</div></div><div class="tl-item" data-jump="t_19" style="border-left-color:#b2bec3"><div class="tl-date">26-06-12</div><div class="tl-title">苏世博封样不对+谈价</div><div class="tl-note">已完结</div></div><div class="tl-item" data-jump="t_46" style="border-left-color:#00b894"><div class="tl-date">26-06-12</div><div class="tl-title">密度板谈价</div><div class="tl-note">又谈了一下，最低能到1670，</div></div><div class="tl-item" data-jump="t_50" style="border-left-color:#74b9ff"><div class="tl-date">26-06-11</div><div class="tl-title">影木新增-门+护墙</div><div class="tl-note">影木需要新增素板和封边条</div></div><div class="tl-item" data-jump="t_26" style="border-left-color:#74b9ff"><div class="tl-date">26-06-09</div><div class="tl-title">舍凡富盛升降机</div><div class="tl-note">交接给廷廷</div></div><div class="tl-item" data-jump="t_27" style="border-left-color:#74b9ff"><div class="tl-date">26-06-09</div><div class="tl-title">舍凡富盛双向抽</div><div class="tl-note">交接给廷廷</div></div><div class="tl-item" data-jump="t_42" style="border-left-color:#00b894"><div class="tl-date">26-06-06</div><div class="tl-title">凯里一体锁直降</div><div class="tl-note">已完成，平均降幅9.56%，年化省本约18.5w</div></div><div class="tl-item" data-jump="t_11" style="border-left-color:#b2bec3"><div class="tl-date">26-06-01</div><div class="tl-title">准分子新开一家（金东亚？）</div><div class="tl-note">和领导汇报过了，领导意思是我们订单喂不饱金东亚，卡模质量也不…</div></div></div>
-</div>
+
 <main class="kanban" id="kanban"><div class="column col-doing " data-status="进行中"><div class="col-head" data-toggle="进行中"><span class="col-title">进行中<span class="col-badge">15</span></span><span class="col-toggle">▼</span></div><div class="col-body" data-drop="进行中"><div class="card" draggable="true" data-id="t_7" style="border-left-color:#00b894"><div class="card-title">名门隐形合页-换款替换降本</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-05-28 </span>测试ing，预计6月20日</div></div><div class="card" draggable="true" data-id="t_8" style="border-left-color:#00b894"><div class="card-title">名门隐形合页-凯里替代方案</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省28万</span></div><div class="card-note"><span class="note-date">26-05-28 </span>测试ing，预计6月20日</div></div><div class="card" draggable="true" data-id="t_11" style="border-left-color:#b2bec3"><div class="card-title">准分子新开一家（金东亚？）</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-06-01 </span>和领导汇报过了，领导意思是我们订单喂不饱金东亚，卡模质量也不行，项目可以暂时搁置。但曹阳和我的想法是再试一下卡模。给了卡模和金东亚都在打样中了</div></div><div class="card" draggable="true" data-id="t_12" style="border-left-color:#00b894"><div class="card-title">密度板直采</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省4.5万</span></div><div class="card-note"><span class="note-date">26-06-09 </span>和曹阳沟通，统计了一下，考虑是否要把零散的都切给佳诺威</div></div><div class="card" draggable="true" data-id="t_13" style="border-left-color:#00b894"><div class="card-title">准分子直采</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省42万</span></div><div class="card-note"><span class="note-date">26-06-18 </span>追进度，说是要7月初</div></div><div class="card" draggable="true" data-id="t_21" style="border-left-color:#74b9ff"><div class="card-title">江南新花色-高光雪域金</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-06-18 </span>又来了，调整完了，已交接至忠皓测试</div></div><div class="card" draggable="true" data-id="t_22" style="border-left-color:#00b894"><div class="card-title">螺丝整体比价</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省26.58万</span></div><div class="card-note"><span class="note-date">26-06-08 </span>史苗福测过了还行，韩意思是安排200套给直营店测试，过了就直接签。开模中，月底提供</div></div><div class="card" draggable="true" data-id="t_32" style="border-left-color:#b2bec3"><div class="card-title">双马质保金退回</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-22 </span>已提交，退回了，等新抬头质保金提交之后再整</div></div><div class="card" draggable="true" data-id="t_43" style="border-left-color:#00b894"><div class="card-title">凯里一体锁和兆高合页二供</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-05-28 </span>一体锁方面名门的锌合金报价没有优势且外观差异很大估计是直接pass了；铝合金有优势，但外观也有区别，而且打样的话还得调色，尺寸也不一样。先让他来一个铝合金的外观…</div></div><div class="card" draggable="true" data-id="t_46" style="border-left-color:#00b894"><div class="card-title">密度板谈价</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-06-12 </span>又谈了一下，最低能到1670，</div></div><div class="card" draggable="true" data-id="t_47" style="border-left-color:#00b894"><div class="card-title">E0货源变更为E1</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-05-20 </span>变更期间添加为E0的货源要改回来
 暂时不动了，又有可能要改E0</div></div><div class="card" draggable="true" data-id="t_49" style="border-left-color:#0984e3"><div class="card-title">慧鱼螺丝</div><div class="card-meta"><span class="tag">新品-重点关注</span></div><div class="card-note"><span class="note-date">26-06-16 </span>节后出价格，已在同步画图设计</div></div><div class="card" draggable="true" data-id="t_50" style="border-left-color:#74b9ff"><div class="card-title">影木新增-门+护墙</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-06-11 </span>影木需要新增素板和封边条</div></div><div class="card" draggable="true" data-id="t_54" style="border-left-color:#00b894"><div class="card-title">浮雕板二供</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省10万</span></div><div class="card-note"><span class="note-date">26-06-01 </span>重新切了重新干</div></div><div class="card" draggable="true" data-id="t_55" style="border-left-color:#00b894"><div class="card-title">三合一摸排</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-06-21 </span>可以拿到成本分析，对照着看一下细节，同步拿到实物样品</div></div></div></div><div class="column col-wait " data-status="暂待"><div class="col-head" data-toggle="暂待"><span class="col-title">暂待<span class="col-badge">2</span></span><span class="col-toggle">▼</span></div><div class="col-body" data-drop="暂待"><div class="card" draggable="true" data-id="t_33" style="border-left-color:#00b894"><div class="card-title">门锁锌改铝</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-05-18 </span>一体锁报价的时候也会同步报一下，看看差距，看看具体产品</div></div><div class="card" draggable="true" data-id="t_41" style="border-left-color:#6c5ce7"><div class="card-title">舍凡膨胀螺丝二供</div><div class="card-meta"><span class="tag">其他-重点关注</span></div><div class="card-note"><span class="note-date">26-06-20 </span>暂时不管了，</div></div></div></div><div class="column col-done " data-status="已完结"><div class="col-head" data-toggle="已完结"><span class="col-title">已完结<span class="col-badge">32</span></span><span class="col-toggle">▼</span></div><div class="col-body" data-drop="已完结"><div class="card" draggable="true" data-id="t_1" style="border-left-color:#74b9ff"><div class="card-title">舜合扫地机器人电动开门器</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-02 </span>完成</div></div><div class="card" draggable="true" data-id="t_2" style="border-left-color:#74b9ff"><div class="card-title">舜合供应商导入</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-05-20 </span>效率是真慢，一天一次，已到供应商盖章</div></div><div class="card" draggable="true" data-id="t_3" style="border-left-color:#74b9ff"><div class="card-title">巴斯供应商导入</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-24 </span>完成了！</div></div><div class="card" draggable="true" data-id="t_4" style="border-left-color:#74b9ff"><div class="card-title">两款UV高光影木(德必隆)</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-05-15 </span>已补签样</div></div><div class="card" draggable="true" data-id="t_5" style="border-left-color:#74b9ff"><div class="card-title">哥尼迪帕诺28厚无力铰链</div><div class="card-meta"><span class="tag">新品-日常</span><span class="tag">要求 26-04-10</span></div><div class="card-note"><span class="note-date">26-04-20 </span>已提交</div></div><div class="card" draggable="true" data-id="t_6" style="border-left-color:#00b894"><div class="card-title">名门隐形合页谈价降本</div><div class="card-meta"><span class="tag">降本</span><span class="tag" style="color:#00936b">省7.4万</span></div><div class="card-note"><span class="note-date">26-04-27 </span>谈不下去，先提交拿到吧，二供测试单开一项</div></div><div class="card" draggable="true" data-id="t_9" style="border-left-color:#00b894"><div class="card-title">兆高合页谈价</div><div class="card-meta"><span class="tag">降本</span></div><div class="card-note"><span class="note-date">26-04-13 </span>新成本分析表已完成，已提交</div></div><div class="card" draggable="true" data-id="t_10" style="border-left-color:#b2bec3"><div class="card-title">海蒂诗风影移门价格错误</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-13 </span>已完成</div></div><div class="card" draggable="true" data-id="t_15" style="border-left-color:#74b9ff"><div class="card-title">阿克德铰链签样</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-16 </span>已交接</div></div><div class="card" draggable="true" data-id="t_16" style="border-left-color:#74b9ff"><div class="card-title">防风地吸</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-30 </span>已签样</div></div><div class="card" draggable="true" data-id="t_17" style="border-left-color:#74b9ff"><div class="card-title">西野红签样</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-08 </span>已签</div></div><div class="card" draggable="true" data-id="t_18" style="border-left-color:#74b9ff"><div class="card-title">莱瑟咖皮纹</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-20 </span>已加</div></div><div class="card" draggable="true" data-id="t_19" style="border-left-color:#b2bec3"><div class="card-title">苏世博封样不对+谈价</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-06-12 </span>已完结</div></div><div class="card" draggable="true" data-id="t_20" style="border-left-color:#74b9ff"><div class="card-title">沉头黑色内六角螺丝4X12</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-14 </span>暂时搁置直接pass</div></div><div class="card" draggable="true" data-id="t_23" style="border-left-color:#74b9ff"><div class="card-title">IF下翻门+平板铰链</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-04-29 </span>已签样</div></div><div class="card" draggable="true" data-id="t_24" style="border-left-color:#b2bec3"><div class="card-title">隐形、明装合页情况调查</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-14 </span>已提交</div></div><div class="card" draggable="true" data-id="t_25" style="border-left-color:#b2bec3"><div class="card-title">冰山白</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-13 </span>签样都好了</div></div><div class="card" draggable="true" data-id="t_26" style="border-left-color:#74b9ff"><div class="card-title">舍凡富盛升降机</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-06-09 </span>交接给廷廷</div></div><div class="card" draggable="true" data-id="t_27" style="border-left-color:#74b9ff"><div class="card-title">舍凡富盛双向抽</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-06-09 </span>交接给廷廷</div></div><div class="card" draggable="true" data-id="t_28" style="border-left-color:#74b9ff"><div class="card-title">舍凡金盛店用磁铁和支架</div><div class="card-meta"><span class="tag">新品-日常</span></div><div class="card-note"><span class="note-date">26-05-26 </span>已开票，交接给廷廷</div></div><div class="card" draggable="true" data-id="t_29" style="border-left-color:#b2bec3"><div class="card-title">天斯情况沟通</div><div class="card-meta"><span class="tag">其他-日常</span></div><div class="card-note"><span class="note-date">26-04-13 </span>报价单已拿到，测试结果问苗福
 现在3.05（含盖子）报价2.75+0.3=3.05
@@ -2154,7 +2136,7 @@ function fetchOriginalHTML(){
 }
 
 /* ============ 渲染 ============ */
-function renderAll(){renderStats();renderTimeline();renderKanban()}
+function renderAll(){renderStats();renderKanban()}
 
 function renderStats(){
   var s={进行中:0,暂待:0,已完结:0,取消:0,overdue:0,cost:0};
@@ -2173,23 +2155,7 @@ function renderStats(){
   $("#statsBar").innerHTML=html;
 }
 
-function renderTimeline(){
-  var items=state.tasks.slice().sort(function(a,b){
-    return (b.updatedAt||"").localeCompare(a.updatedAt||"");
-  }).slice(0,20);
-  var html="";
-  if(!items.length){html='<div class="timeline-empty">暂无任务</div>';$("#timeline").innerHTML=html;return}
-  items.forEach(function(t){
-    var ln=lastNote(t);
-    var d=(t.updatedAt||"").slice(0,10);
-    html+='<div class="tl-item" data-jump="'+t.id+'" style="border-left-color:'+typeColor(t.type)+'">'
-      +'<div class="tl-date">'+formatDate(d)+'</div>'
-      +'<div class="tl-title">'+escapeHtml(truncate(t.title,22))+'</div>'
-      +'<div class="tl-note">'+escapeHtml(truncate(ln?ln.text:"",30))+'</div>'
-      +'</div>';
-  });
-  $("#timeline").innerHTML=html;
-}
+
 
 function renderKanban(){
   var kanban=$("#kanban");
@@ -2549,10 +2515,6 @@ function bindEvents(){
     if(toggle){var st=toggle.dataset.toggle;collapsedCols[st]=!collapsedCols[st];renderKanban();return}
     var card=e.target.closest(".card");
     if(card)openEditor(card.dataset.id);
-  });
-  // 时间线跳转
-  $("#timeline").addEventListener("click",function(e){
-    var it=e.target.closest("[data-jump]");if(it)jumpTo(it.dataset.jump);
   });
   // 备注删除（弹窗内）
   $("#editBody").addEventListener("click",function(e){
