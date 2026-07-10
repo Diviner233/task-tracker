@@ -310,7 +310,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
 <script type="application/json" id="taskboard-data">
 {
   "version": "1.0",
-  "lastSavedAt": "2026-07-10T01:42:47.769Z",
+  "lastSavedAt": "2026-07-10T02:36:01.077Z",
   "source": "工作记录.csv",
   "typeColors": {
     "新品-日常": "#74b9ff",
@@ -702,12 +702,12 @@ input,select,textarea{font-family:inherit;font-size:14px}
         }
       ],
       "costSaving": {
-        "annualAmountWan": 4.5,
+        "annualAmountWan": 34.5,
         "reductionPercent": null,
         "rawText": null
       },
       "createdAt": "2026-04-30T00:00:00.000Z",
-      "updatedAt": "2026-07-09T09:14:34.581Z"
+      "updatedAt": "2026-07-10T02:33:56.666Z"
     },
     {
       "id": "t_13",
@@ -1022,11 +1022,15 @@ input,select,textarea{font-family:inherit;font-size:14px}
         {
           "date": "2026-06-18",
           "text": "又来了，调整完了，已交接至忠皓测试"
+        },
+        {
+          "date": "2026-07-10",
+          "text": "前几天出了新报告，还是不行，100%不合格，各种变形。德必隆查证中"
         }
       ],
       "costSaving": null,
       "createdAt": "2026-04-07T00:00:00.000Z",
-      "updatedAt": "2026-06-18T00:00:00.000Z"
+      "updatedAt": "2026-07-10T02:34:40.640Z"
     },
     {
       "id": "t_22",
@@ -1314,7 +1318,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       "owner": "周晓源",
       "proposedAt": "2026-04-15",
       "requiredAt": null,
-      "status": "进行中",
+      "status": "已完结",
       "notes": [
         {
           "date": "2026-04-22",
@@ -1323,7 +1327,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       ],
       "costSaving": null,
       "createdAt": "2026-04-15T00:00:00.000Z",
-      "updatedAt": "2026-04-22T00:00:00.000Z"
+      "updatedAt": "2026-07-10T02:34:57.210Z"
     },
     {
       "id": "t_33",
@@ -1699,7 +1703,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       "owner": "周晓源",
       "proposedAt": "2026-05-20",
       "requiredAt": null,
-      "status": "进行中",
+      "status": "暂待",
       "notes": [
         {
           "date": "2026-05-20",
@@ -1708,7 +1712,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       ],
       "costSaving": null,
       "createdAt": "2026-05-20T00:00:00.000Z",
-      "updatedAt": "2026-05-20T00:00:00.000Z"
+      "updatedAt": "2026-07-10T02:35:06.478Z"
     },
     {
       "id": "t_48",
@@ -1750,11 +1754,15 @@ input,select,textarea{font-family:inherit;font-size:14px}
         {
           "date": "2026-06-16",
           "text": "节后出价格，已在同步画图设计"
+        },
+        {
+          "date": "2026-07-10",
+          "text": "昨天螺丝已到，下周等哥尼迪的新螺丝+盖子到了之后一并测试。已同频史苗福"
         }
       ],
       "costSaving": null,
       "createdAt": "2026-06-05T00:00:00.000Z",
-      "updatedAt": "2026-06-16T00:00:00.000Z"
+      "updatedAt": "2026-07-10T02:35:54.581Z"
     },
     {
       "id": "t_50",
@@ -1764,7 +1772,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       "owner": "周晓源",
       "proposedAt": "2026-06-11",
       "requiredAt": null,
-      "status": "进行中",
+      "status": "已完结",
       "notes": [
         {
           "date": "2026-06-11",
@@ -1773,7 +1781,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       ],
       "costSaving": null,
       "createdAt": "2026-06-11T00:00:00.000Z",
-      "updatedAt": "2026-06-11T00:00:00.000Z"
+      "updatedAt": "2026-07-10T02:35:15.261Z"
     },
     {
       "id": "t_51",
@@ -1888,6 +1896,1067 @@ input,select,textarea{font-family:inherit;font-size:14px}
     }
   ]
 }
+</script>
+  var openTag='<script type="application/json" id="taskboard-data">';
+  var closeTag='<\/'+'script>';
+  var newDataBlock=openTag+"\n"+safeJson+"\n"+closeTag;
+  var originalHTML=fetchOriginalHTML();
+  if(!originalHTML){originalHTML="<!DOCTYPE html>\n"+document.documentElement.outerHTML}
+  var RE=/<script\s+type="application\/json"\s+id="taskboard-data">[\s\S]*?<\/script>/i;
+  var newHTML;
+  if(RE.test(originalHTML)){newHTML=originalHTML.replace(RE,function(){return newDataBlock})}
+  else{newHTML=originalHTML.replace(/<\/body>/i,function(){return newDataBlock+"\n</body>"})}
+  return newHTML;
+}
+function syncToGitHub(){
+  if(!ghConfigValid()){showToast("请先点击 ⚙️ 配置 GitHub 同步","error");openGhSettings();return}
+  if(!isDirty && !confirm("当前内容没有未保存的改动，确定要同步吗？"))return;
+  var cfg=getGhConfig();
+  var btn=$("#syncBtn");
+  btn.disabled=true;btn.textContent="☁️ 同步中…";
+  var newHTML=buildNewHTML();
+  var apiBase="https://api.github.com/repos/"+cfg.repo+"/contents/"+cfg.path;
+  // 1. 获取当前文件 SHA
+  fetch(apiBase+"?ref="+encodeURIComponent(cfg.branch),{
+    headers:{"Authorization":"token "+cfg.token,"Accept":"application/vnd.github.v3+json"}
+  }).then(function(r){
+    if(!r.ok)throw new Error("获取文件信息失败("+r.status+")");
+    return r.json();
+  }).then(function(info){
+    // 2. 更新文件
+    var content=btoa(unescape(encodeURIComponent(newHTML)));
+    return fetch(apiBase,{
+      method:"PUT",
+      headers:{
+        "Authorization":"token "+cfg.token,
+        "Accept":"application/vnd.github.v3+json",
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        message:"看板更新 "+formatDateFull(todayISO()),
+        content:content,
+        sha:info.sha,
+        branch:cfg.branch
+      })
+    });
+  }).then(function(r){
+    if(!r.ok)throw new Error("上传失败("+r.status+")");
+    return r.json();
+  }).then(function(){
+    markClean();
+    syncBufferAfterSave();
+    renderAll();
+    btn.disabled=false;btn.textContent="☁️ 同步";
+    showToast("已同步到 GitHub，Pages 1-2 分钟后更新","success");
+  }).catch(function(err){
+    btn.disabled=false;btn.textContent="☁️ 同步";
+    var msg=String(err.message||err);
+    if(msg.indexOf("401")>=0)msg="Token 无效或已过期，请重新获取";
+    else if(msg.indexOf("404")>=0)msg="仓库或文件路径不存在，请检查设置";
+    else if(msg.indexOf("403")>=0)msg="Token 权限不足，需勾选 repo 权限";
+    showToast("同步失败："+msg,"error");
+  });
+}
+
+/* 保存：生成新 HTML 并下载 */
+function fetchOriginalHTML(){
+  // XHR 同步（file:// 兼容性最好）
+  try{
+    var xhr=new XMLHttpRequest();
+    xhr.open("GET",location.href,false);
+    xhr.overrideMimeType&&xhr.overrideMimeType("text/html;charset=utf-8");
+    xhr.send(null);
+    if(xhr.status===0||xhr.status===200){return xhr.responseText}
+  }catch(e){}
+  // fetch 异步尝试（部分浏览器 file:// 允许）—— 这里同步无法用，留给异步版本
+  return null;
+}
+
+/* ============ 渲染 ============ */
+function renderAll(){renderStats();renderTimeline();renderKanban()}
+
+function renderStats(){
+  var s={进行中:0,暂待:0,已完结:0,取消:0,overdue:0,cost:0};
+  state.tasks.forEach(function(t){
+    if(s[t.status]!==undefined)s[t.status]++;
+    if(isOverdue(t))s.overdue++;
+    if(t.costSaving&&t.costSaving.annualAmountWan)s.cost+=t.costSaving.annualAmountWan;
+  });
+  var html='<div class="stat doing"><span class="num">'+s["进行中"]+'</span><span class="lbl">进行中</span></div>'
+    +'<div class="stat wait"><span class="num">'+s["暂待"]+'</span><span class="lbl">暂待</span></div>'
+    +'<div class="stat done"><span class="num">'+s["已完结"]+'</span><span class="lbl">已完结</span></div>'
+    +'<div class="stat cancel"><span class="num">'+s["取消"]+'</span><span class="lbl">取消</span></div>'
+    +'<div class="stat overdue"><span class="num">'+s.overdue+'</span><span class="lbl">逾期</span></div>'
+    +'<div class="stat cost"><span class="num">'+s.cost.toFixed(1)+'</span><span class="lbl">降本年省(万)</span></div>'
+    +'<div class="stat"><span class="num">'+state.tasks.length+'</span><span class="lbl">总计</span></div>';
+  $("#statsBar").innerHTML=html;
+}
+
+function renderTimeline(){
+  var items=state.tasks.slice().sort(function(a,b){
+    return (b.updatedAt||"").localeCompare(a.updatedAt||"");
+  }).slice(0,20);
+  var html="";
+  if(!items.length){html='<div class="timeline-empty">暂无任务</div>';$("#timeline").innerHTML=html;return}
+  items.forEach(function(t){
+    var ln=lastNote(t);
+    var d=(t.updatedAt||"").slice(0,10);
+    html+='<div class="tl-item" data-jump="'+t.id+'" style="border-left-color:'+typeColor(t.type)+'">'
+      +'<div class="tl-date">'+formatDate(d)+'</div>'
+      +'<div class="tl-title">'+escapeHtml(truncate(t.title,22))+'</div>'
+      +'<div class="tl-note">'+escapeHtml(truncate(ln?ln.text:"",30))+'</div>'
+      +'</div>';
+  });
+  $("#timeline").innerHTML=html;
+}
+
+function renderKanban(){
+  var kanban=$("#kanban");
+  var html="";
+  STATUSES.forEach(function(st){
+    var key=STATUS_KEY[st];
+    var tasks=state.tasks.filter(taskMatchesFilters).filter(function(t){return t.status===st});
+    var collapsed=collapsedCols[st]?"collapsed":"";
+    html+='<div class="column col-'+key+' '+collapsed+'" data-status="'+st+'">'
+      +'<div class="col-head" data-toggle="'+st+'">'
+        +'<span class="col-title">'+st+'<span class="col-badge">'+tasks.length+'</span></span>'
+        +'<span class="col-toggle">'+(collapsedCols[st]?"▶":"▼")+'</span>'
+      +'</div>'
+      +'<div class="col-body" data-drop="'+st+'">';
+    if(!tasks.length){
+      html+='<div class="cards-empty">'+(filters.search||filters.type||filters.status?"无匹配":"拖拽卡片到此处")+'</div>';
+    }else{
+      tasks.forEach(function(t){html+=renderCard(t)});
+    }
+    html+='</div></div>';
+  });
+  kanban.innerHTML=html;
+}
+
+function renderCard(t){
+  var ln=lastNote(t);
+  var od=isOverdue(t);
+  var odDays=overdueDays(t);
+  var reqClass=od?' req':'';
+  var reqHtml=t.requiredAt?('<span class="tag'+reqClass+'">要求 '+formatDate(t.requiredAt)+(od?' ⚠':'')+'</span>'):'';
+  var costHtml=(t.costSaving&&t.costSaving.annualAmountWan)?('<span class="tag" style="color:#00936b">省'+t.costSaving.annualAmountWan+'万</span>'):'';
+  var noteHtml="";
+  if(ln){
+    var dt=ln.date?formatDate(ln.date)+" ":"";
+    noteHtml='<div class="card-note"><span class="note-date">'+escapeHtml(dt)+'</span>'+escapeHtml(truncate(ln.text,80))+'</div>';
+  }
+  return '<div class="card'+(od?" overdue":"")+'" draggable="true" data-id="'+t.id+'" style="border-left-color:'+typeColor(t.type)+'">'
+    +(od?'<span class="card-overdue-badge">逾期'+odDays+'天</span>':"")
+    +'<div class="card-title">'+escapeHtml(t.title)+'</div>'
+    +'<div class="card-meta"><span class="tag">'+escapeHtml(t.type)+'</span>'+reqHtml+costHtml+'</div>'
+    +noteHtml
+    +'</div>';
+}
+
+/* ============ 筛选 ============ */
+function taskMatchesFilters(t){
+  if(filters.status && t.status!==filters.status)return false;
+  if(filters.type && t.type!==filters.type)return false;
+  if(filters.search){
+    var q=filters.search.toLowerCase();
+    var inTitle=(t.title||"").toLowerCase().indexOf(q)>=0;
+    var inNotes=(t.notes||[]).some(function(n){return (n.text||"").toLowerCase().indexOf(q)>=0});
+    if(!inTitle&&!inNotes)return false;
+  }
+  return true;
+}
+function applyFilters(){renderKanban()}
+
+/* ============ 编辑 ============ */
+function openEditor(id){
+  editingId=id;
+  var t=id?findById(id):null;
+  $("#editTitle").textContent=t?"编辑任务":"新建任务";
+  $("#deleteBtn").style.display=t?"inline-block":"none";
+  var body=$("#editBody");
+  var isCost=(t&&t.type==="降本");
+  body.innerHTML=
+    '<div class="form-row"><label>事项标题 *</label><input id="f_title" value="'+escapeHtml(t?t.title:"")+'" placeholder="任务名称"></div>'
+    +'<div class="form-grid3">'
+      +'<div class="form-row"><label>类型</label><select id="f_type">'+TYPES.map(function(tp){return '<option value="'+tp+'"'+((t?t.type:"新品-日常")===tp?" selected":"")+'>'+tp+'</option>'}).join("")+'</select></div>'
+      +'<div class="form-row"><label>责任人</label><input id="f_owner" value="'+escapeHtml(t?t.owner:"周晓源")+'"></div>'
+      +'<div class="form-row"><label>状态</label><select id="f_status">'+STATUSES.map(function(st){return '<option value="'+st+'"'+((t?t.status:"进行中")===st?" selected":"")+'>'+st+'</option>'}).join("")+'</select></div>'
+    +'</div>'
+    +'<div class="form-grid2">'
+      +'<div class="form-row"><label>提出时间</label><input type="date" id="f_proposed" value="'+(t&&t.proposedAt?t.proposedAt:"")+'"></div>'
+      +'<div class="form-row"><label>要求完成时间</label><input type="date" id="f_required" value="'+(t&&t.requiredAt?t.requiredAt:"")+'"></div>'
+    +'</div>'
+    +'<div class="form-grid2 cost-row'+(isCost?" show":"")+'" id="costRow">'
+      +'<div class="form-row"><label>年省本(万)</label><input type="number" step="0.1" id="f_cost" value="'+(t&&t.costSaving&&t.costSaving.annualAmountWan?t.costSaving.annualAmountWan:"")+'" placeholder="如 7.4"></div>'
+      +'<div class="form-row"><label>降幅(%)</label><input type="number" step="0.1" id="f_reduce" value="'+(t&&t.costSaving&&t.costSaving.reductionPercent?t.costSaving.reductionPercent:"")+'" placeholder="如 3.7"></div>'
+    +'</div>'
+    +'<div class="notes-section">'
+      +'<h4>进度备注 '+(t&&t.notes.length?'<span style="color:#bbb;font-weight:400">('+t.notes.length+')</span>':"")+'</h4>'
+      +'<div class="notes-list" id="notesList">'+renderNotesList(t)+'</div>'
+      +'<div class="append-row">'
+        +'<input type="date" id="appendDate" value="'+todayISO()+'">'
+        +'<textarea id="appendText" placeholder="追加进度备注…"></textarea>'
+        +'<button class="btn btn-primary" id="appendBtn">追加</button>'
+      +'</div>'
+    +'</div>';
+  // 类型切换显示降本字段
+  $("#f_type").onchange=function(){$("#costRow").className="form-grid2 cost-row"+(this.value==="降本"?" show":"")};
+  $("#appendBtn").onclick=handleAppendNote;
+  showMask("#editModal");
+}
+
+function renderNotesList(t){
+  if(!t||!t.notes.length)return '<div class="notes-empty">暂无备注，在下方追加</div>';
+  return t.notes.map(function(n,i){
+    return '<div class="note-item"><div class="note-date-col">'+(n.date?formatDateFull(n.date):"无日期")+'</div><div class="note-text-col">'+escapeHtml(n.text)+'</div><button class="note-del" data-delnote="'+i+'">删除</button></div>';
+  }).join("");
+}
+
+function handleAppendNote(){
+  var d=$("#appendDate").value;
+  var txt=$("#appendText").value.trim();
+  if(!txt){showToast("请输入备注内容","error");return}
+  var t=editingId?findById(editingId):_draftTask();
+  if(!t.notes)t.notes=[];
+  t.notes.push({date:d||null,text:txt});
+  t.updatedAt=nowISO();
+  if(!editingId){_draft=t}
+  else{markDirty()}
+  $("#notesList").innerHTML=renderNotesList(t);
+  $("#appendText").value="";
+  // 不立即存入 state（新建时存草稿），保存时统一提交
+}
+
+var _draft=null;
+function _draftTask(){
+  if(_draft)return _draft;
+  _draft={id:genId(),type:"新品-日常",title:"",owner:"周晓源",proposedAt:null,requiredAt:null,status:"进行中",notes:[],costSaving:null,createdAt:nowISO(),updatedAt:nowISO()};
+  return _draft;
+}
+
+function saveTaskFromForm(){
+  var title=$("#f_title").value.trim();
+  if(!title){showToast("请填写事项标题","error");return}
+  var type=$("#f_type").value;
+  var owner=$("#f_owner").value.trim()||"周晓源";
+  var status=$("#f_status").value;
+  var proposed=$("#f_proposed").value||null;
+  var required=$("#f_required").value||null;
+  var cost=null;
+  if(type==="降本"){
+    var cval=parseFloat($("#f_cost").value);
+    var rval=parseFloat($("#f_reduce").value);
+    if(!isNaN(cval)||!isNaN(rval)){
+      cost={annualAmountWan:isNaN(cval)?null:cval,reductionPercent:isNaN(rval)?null:rval,rawText:null};
+    }
+  }
+  var t;
+  if(editingId){
+    t=findById(editingId);
+    t.title=title;t.type=type;t.owner=owner;t.status=status;
+    t.proposedAt=proposed;t.requiredAt=required;t.costSaving=cost;
+    t.updatedAt=nowISO();
+  }else{
+    t=_draft||_draftTask();
+    t.title=title;t.type=type;t.owner=owner;t.status=status;
+    t.proposedAt=proposed;t.requiredAt=required;t.costSaving=cost;
+    t.createdAt=t.createdAt||nowISO();t.updatedAt=nowISO();
+    state.tasks.push(t);
+  }
+  _draft=null;
+  markDirty();
+  hideMask("#editModal");
+  renderAll();
+  showToast("已保存，记得点「☁️ 同步」推送到 GitHub","success");
+}
+
+function deleteTask(id){
+  if(!confirm("确定删除此任务？此操作不可撤销（保存文件前可恢复）。"))return;
+  var idx=state.tasks.findIndex(function(t){return t.id===id});
+  if(idx>=0){state.tasks.splice(idx,1);markDirty();hideMask("#editModal");renderAll();showToast("已删除","success")}
+}
+
+function deleteNote(taskId,noteIdx){
+  var t=findById(taskId);
+  if(!t||!t.notes)return;
+  t.notes.splice(noteIdx,1);
+  t.updatedAt=nowISO();
+  if(editingId===taskId){$("#notesList").innerHTML=renderNotesList(t)}
+  markDirty();
+}
+
+function changeStatus(taskId,newStatus){
+  var t=findById(taskId);
+  if(!t||t.status===newStatus)return;
+  t.status=newStatus;t.updatedAt=nowISO();
+  markDirty();renderAll();
+}
+
+function findById(id){return state.tasks.find(function(t){return t.id===id})}
+
+/* ============ 拖拽 ============ */
+var dragId=null;
+function bindDragDrop(){
+  document.addEventListener("dragstart",function(e){
+    var card=e.target.closest(".card");
+    if(!card)return;
+    dragId=card.dataset.id;card.style.opacity=".4";
+  });
+  document.addEventListener("dragend",function(e){
+    var card=e.target.closest(".card");
+    if(card)card.style.opacity="";
+    $all(".col-body").forEach(function(c){c.classList.remove("drop-active")});
+  });
+  document.addEventListener("dragover",function(e){
+    var body=e.target.closest(".col-body");
+    if(body){e.preventDefault();body.classList.add("drop-active")}
+  });
+  document.addEventListener("dragleave",function(e){
+    var body=e.target.closest(".col-body");
+    if(body&&!body.contains(e.relatedTarget))body.classList.remove("drop-active");
+  });
+  document.addEventListener("drop",function(e){
+    var body=e.target.closest(".col-body");
+    if(!body||!dragId)return;
+    e.preventDefault();
+    body.classList.remove("drop-active");
+    var newStatus=body.dataset.drop;
+    changeStatus(dragId,newStatus);
+    dragId=null;
+  });
+}
+
+/* ============ 跳转高亮 ============ */
+function jumpTo(id){
+  var t=findById(id);
+  if(!t)return;
+  // 若该任务被筛选隐藏，先清空筛选
+  if(!taskMatchesFilters(t)){filters={search:"",type:"",status:""};$("#searchInput").value="";$("#typeFilter").value="";$("#statusFilter").value="";renderKanban()}
+  var card=document.querySelector('.card[data-id="'+id+'"]');
+  if(card){
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+    card.classList.add("flash");
+    setTimeout(function(){card.classList.remove("flash")},1700);
+  }
+}
+
+/* ============ 汇总 ============ */
+function openSummary(){
+  var end=todayISO();
+  var start=end.slice(0,8)+"01";
+  $("#summaryBody").innerHTML=
+    '<div class="summary-controls">'
+      +'<label>开始 <input type="date" id="sumStart" value="'+start+'"></label>'
+      +'<label>结束 <input type="date" id="sumEnd" value="'+end+'"></label>'
+      +'<button class="btn btn-primary" id="sumQuery">查询</button>'
+    +'</div>'
+    +'<div id="sumResult"></div>';
+  $("#sumQuery").onclick=runSummary;
+  runSummary();
+  showMask("#summaryModal");
+}
+function runSummary(){
+  var s=parseDateNum($("#sumStart").value);
+  var e=parseDateNum($("#sumEnd").value);
+  if(!s||!e){$("#sumResult").innerHTML='<p style="color:#999">请选择时间段</p>';return}
+  var added=[],finished=[],notes=[];
+  var cost=0;
+  state.tasks.forEach(function(t){
+    if(parseDateNum(t.proposedAt)>=s&&parseDateNum(t.proposedAt)<=e)added.push(t);
+    if(t.status==="已完结"){
+      var ld=lastNoteDate(t);
+      if(ld&&parseDateNum(ld)>=s&&parseDateNum(ld)<=e){
+        finished.push(t);
+        if(t.costSaving&&t.costSaving.annualAmountWan)cost+=t.costSaving.annualAmountWan;
+      }
+    }
+    (t.notes||[]).forEach(function(n){
+      if(n.date&&parseDateNum(n.date)>=s&&parseDateNum(n.date)<=e)notes.push({task:t,note:n});
+    });
+  });
+  var html='<div class="summary-totals">'
+    +'<div class="summary-total"><div class="n">'+added.length+'</div><div class="t">时段新增任务</div></div>'
+    +'<div class="summary-total"><div class="n">'+finished.length+'</div><div class="t">时段完结任务</div></div>'
+    +'<div class="summary-total"><div class="n">'+notes.length+'</div><div class="t">时段追加备注</div></div>'
+    +'<div class="summary-total cost"><div class="n">'+cost.toFixed(1)+'</div><div class="t">时段完结降本(万)</div></div>'
+    +'</div>';
+  html+='<div class="summary-group"><h5>新增任务 ('+added.length+')</h5>';
+  html+=added.length?added.map(function(t){return '<div class="summary-item"><span class="si-title">'+escapeHtml(t.title)+'</span><span class="si-date">'+formatDate(t.proposedAt)+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  html+='<div class="summary-group"><h5>完结任务 ('+finished.length+')</h5>';
+  html+=finished.length?finished.map(function(t){return '<div class="summary-item"><span class="si-title">'+escapeHtml(t.title)+'</span><span class="si-date">'+formatDate(lastNoteDate(t))+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  html+='<div class="summary-group"><h5>进度备注 ('+notes.length+')</h5>';
+  notes.sort(function(a,b){return parseDateNum(a.note.date)-parseDateNum(b.note.date)});
+  html+=notes.length?notes.map(function(it){return '<div class="summary-item"><span class="si-title">['+escapeHtml(truncate(it.task.title,18))+'] '+escapeHtml(truncate(it.note.text,50))+'</span><span class="si-date">'+formatDate(it.note.date)+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  $("#sumResult").innerHTML=html;
+}
+
+/* ============ CSV 导入 ============ */
+function parseCSV(text){
+  var rows=[],row=[],field="",inQ=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(inQ){
+      if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else inQ=false}
+      else field+=c;
+    }else{
+      if(c==='"')inQ=true;
+      else if(c===","){row.push(field);field=""}
+      else if(c==="\n"){row.push(field);rows.push(row);row=[];field=""}
+      else if(c==="\r"){}
+      else field+=c;
+    }
+  }
+  if(field||row.length){row.push(field);rows.push(row)}
+  return rows;
+}
+function csvToDate(raw){
+  if(!raw)return null;var s=String(raw).trim();if(!s||s.charAt(0)==="=")return null;
+  var m=s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);if(m)return m[1]+"-"+pad2(m[2])+"-"+pad2(m[3]);
+  m=s.match(/^(\d{1,2})月(\d{1,2})日/);if(m)return "2026-"+pad2(m[1])+"-"+pad2(m[2]);
+  return null;
+}
+function csvParseNotes(txt){
+  if(!txt)return[];
+  var lines=txt.split(/\r?\n/),notes=[],cur=null;
+  lines.forEach(function(line){
+    var m=line.match(/^(\d{4})\s*(.*)$/);
+    var isDate=false,d=null;
+    if(m){var mm=parseInt(m[1].slice(0,2)),dd=parseInt(m[1].slice(2,4));if(mm>=1&&mm<=12&&dd>=1&&dd<=31){d="2026-"+pad2(mm)+"-"+pad2(dd);isDate=true}}
+    if(isDate){if(cur)notes.push(cur);cur={date:d,text:m[2]}}
+    else{if(cur)cur.text+=(cur.text?"\n":"")+line;else if(line.trim())cur={date:null,text:line}}
+  });
+  if(cur)notes.push(cur);
+  return notes;
+}
+function handleCSVImport(file){
+  var reader=new FileReader();
+  reader.onload=function(){
+    var rows=parseCSV(reader.result);
+    var imported=0;
+    for(var i=1;i<rows.length;i++){
+      var r=rows[i];while(r.length<8)r.push("");
+      var type=(r[1]||"").trim(),title=(r[2]||"").trim();
+      if(!type&&!title)continue;
+      var proposed=csvToDate(r[4]),required=csvToDate(r[5]);
+      var st=(r[7]||"").trim();
+      var status=st==="完结"?"已完结":st==="暂待"?"暂待":st==="取消"?"取消":"进行中";
+      var notes=csvParseNotes(r[6]||"");
+      var upd=notes.length&&notes[notes.length-1].date?notes[notes.length-1].date:proposed;
+      state.tasks.push({id:genId(),type:type,title:title,owner:(r[3]||"").trim()||"周晓源",proposedAt:proposed,requiredAt:required,status:status,notes:notes,costSaving:null,createdAt:proposed?proposed+"T00:00:00.000Z":nowISO(),updatedAt:upd?upd+"T00:00:00.000Z":nowISO()});
+      imported++;
+    }
+    markDirty();renderAll();
+    showToast("已导入 "+imported+" 条任务，记得保存","success");
+  };
+  reader.readAsText(file,"utf-8");
+}
+
+/* ============ 弹窗控制 ============ */
+function showMask(sel){$(sel).classList.remove("hidden")}
+function hideMask(sel){$(sel).classList.add("hidden")}
+
+/* ============ 事件绑定 ============ */
+function bindEvents(){
+  // 卡片点击 / 列折叠 / 删除备注（委托）
+  $("#kanban").addEventListener("click",function(e){
+    var toggle=e.target.closest("[data-toggle]");
+    if(toggle){var st=toggle.dataset.toggle;collapsedCols[st]=!collapsedCols[st];renderKanban();return}
+    var card=e.target.closest(".card");
+    if(card)openEditor(card.dataset.id);
+  });
+  // 时间线跳转
+  $("#timeline").addEventListener("click",function(e){
+    var it=e.target.closest("[data-jump]");if(it)jumpTo(it.dataset.jump);
+  });
+  // 备注删除（弹窗内）
+  $("#editBody").addEventListener("click",function(e){
+    var b=e.target.closest("[data-delnote]");
+    if(!b)return;
+    var idx=parseInt(b.dataset.delnote);
+    if(editingId){deleteNote(editingId,idx)}
+    else if(_draft&&_draft.notes){_draft.notes.splice(idx,1);$("#notesList").innerHTML=renderNotesList(_draft)}
+  });
+  // 搜索
+  var st;
+  $("#searchInput").addEventListener("input",function(){clearTimeout(st);st=setTimeout(function(){filters.search=$("#searchInput").value.trim();applyFilters()},200)});
+  $("#typeFilter").addEventListener("change",function(){filters.type=this.value;applyFilters()});
+  $("#statusFilter").addEventListener("change",function(){filters.status=this.value;applyFilters()});
+  $("#clearFilterBtn").onclick=function(){filters={search:"",type:"",status:""};$("#searchInput").value="";$("#typeFilter").value="";$("#statusFilter").value="";applyFilters()};
+  // 按钮
+  $("#newBtn").onclick=function(){_draft=null;openEditor(null)};
+  $("#saveTaskBtn").onclick=saveTaskFromForm;
+  $("#deleteBtn").onclick=function(){if(editingId)deleteTask(editingId)};
+  $("#syncBtn").onclick=syncToGitHub;
+  $("#settingsBtn").onclick=openGhSettings;
+  $("#ghSaveBtn").onclick=saveGhSettingsFromForm;
+  $("#summaryBtn").onclick=openSummary;
+  $("#importBtn").onclick=function(){$("#csvFile").click()};
+  $("#csvFile").onchange=function(){if(this.files[0]){handleCSVImport(this.files[0]);this.value=""}};
+  $("#printBtn").onclick=function(){window.print()};
+  // 关闭弹窗
+  $all("[data-close]").forEach(function(el){el.onclick=function(){el.closest(".modal-mask").classList.add("hidden");_draft=null}});
+  $all(".modal-mask").forEach(function(m){m.addEventListener("click",function(e){if(e.target===m){m.classList.add("hidden");_draft=null}})});
+  // 关闭前提醒
+  window.addEventListener("beforeunload",function(e){if(isDirty){e.preventDefault();e.returnValue="";return""}});
+  // 键盘 ESC 关弹窗
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"){$all(".modal-mask:not(.hidden)").forEach(function(m){m.classList.add("hidden");_draft=null})}});
+}
+
+/* ============ 初始化 ============ */
+function init(){
+  state=loadDataFromFile();
+  // 填充类型筛选（先清空防止重复）
+  var tf=$("#typeFilter");
+  tf.innerHTML='<option value="">全部类型</option>';
+  TYPES.forEach(function(tp){var o=document.createElement("option");o.value=tp;o.textContent=tp;tf.appendChild(o)});
+  bindEvents();
+  bindDragDrop();
+  checkBufferOnLoad();
+  renderAll();
+  updateDirtyUI();
+  updateSyncStatus();
+  // 工具栏 sticky top 跟随统计区实际高度
+  var sb=$("#statsBar");
+  if(sb)$("#toolbar").style.top=sb.offsetHeight+"px";
+  window.addEventListener("resize",function(){var sb2=$("#statsBar");if(sb2)$("#toolbar").style.top=sb2.offsetHeight+"px"});
+}
+init();
+})();
+</script>
+  var openTag='<script type="application/json" id="taskboard-data">';
+  var closeTag='<\/'+'script>';
+  var newDataBlock=openTag+"\n"+safeJson+"\n"+closeTag;
+  var originalHTML=fetchOriginalHTML();
+  if(!originalHTML){originalHTML="<!DOCTYPE html>\n"+document.documentElement.outerHTML}
+  var RE=/<script\s+type="application\/json"\s+id="taskboard-data">[\s\S]*?<\/script>/i;
+  var newHTML;
+  if(RE.test(originalHTML)){newHTML=originalHTML.replace(RE,function(){return newDataBlock})}
+  else{newHTML=originalHTML.replace(/<\/body>/i,function(){return newDataBlock+"\n</body>"})}
+  return newHTML;
+}
+function syncToGitHub(){
+  if(!ghConfigValid()){showToast("请先点击 ⚙️ 配置 GitHub 同步","error");openGhSettings();return}
+  if(!isDirty && !confirm("当前内容没有未保存的改动，确定要同步吗？"))return;
+  var cfg=getGhConfig();
+  var btn=$("#syncBtn");
+  btn.disabled=true;btn.textContent="☁️ 同步中…";
+  var newHTML=buildNewHTML();
+  var apiBase="https://api.github.com/repos/"+cfg.repo+"/contents/"+cfg.path;
+  // 1. 获取当前文件 SHA
+  fetch(apiBase+"?ref="+encodeURIComponent(cfg.branch),{
+    headers:{"Authorization":"token "+cfg.token,"Accept":"application/vnd.github.v3+json"}
+  }).then(function(r){
+    if(!r.ok)throw new Error("获取文件信息失败("+r.status+")");
+    return r.json();
+  }).then(function(info){
+    // 2. 更新文件
+    var content=btoa(unescape(encodeURIComponent(newHTML)));
+    return fetch(apiBase,{
+      method:"PUT",
+      headers:{
+        "Authorization":"token "+cfg.token,
+        "Accept":"application/vnd.github.v3+json",
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        message:"看板更新 "+formatDateFull(todayISO()),
+        content:content,
+        sha:info.sha,
+        branch:cfg.branch
+      })
+    });
+  }).then(function(r){
+    if(!r.ok)throw new Error("上传失败("+r.status+")");
+    return r.json();
+  }).then(function(){
+    markClean();
+    syncBufferAfterSave();
+    renderAll();
+    btn.disabled=false;btn.textContent="☁️ 同步";
+    updateLastSyncTime();
+    showToast("已同步到 GitHub，Pages 1-2 分钟后更新","success");
+  }).catch(function(err){
+    btn.disabled=false;btn.textContent="☁️ 同步";
+    var msg=String(err.message||err);
+    if(msg.indexOf("401")>=0)msg="Token 无效或已过期，请重新获取";
+    else if(msg.indexOf("404")>=0)msg="仓库或文件路径不存在，请检查设置";
+    else if(msg.indexOf("403")>=0)msg="Token 权限不足，需勾选 repo 权限";
+    showToast("同步失败："+msg,"error");
+  });
+}
+
+/* 保存：生成新 HTML 并下载 */
+function fetchOriginalHTML(){
+  // XHR 同步（file:// 兼容性最好）
+  try{
+    var xhr=new XMLHttpRequest();
+    xhr.open("GET",location.href,false);
+    xhr.overrideMimeType&&xhr.overrideMimeType("text/html;charset=utf-8");
+    xhr.send(null);
+    if(xhr.status===0||xhr.status===200){return xhr.responseText}
+  }catch(e){}
+  // fetch 异步尝试（部分浏览器 file:// 允许）—— 这里同步无法用，留给异步版本
+  return null;
+}
+
+/* ============ 渲染 ============ */
+function renderAll(){renderStats();renderTimeline();renderKanban()}
+
+function renderStats(){
+  var s={进行中:0,暂待:0,已完结:0,取消:0,overdue:0,cost:0};
+  state.tasks.forEach(function(t){
+    if(s[t.status]!==undefined)s[t.status]++;
+    if(isOverdue(t))s.overdue++;
+    if(t.costSaving&&t.costSaving.annualAmountWan)s.cost+=t.costSaving.annualAmountWan;
+  });
+  var html='<div class="stat doing"><span class="num">'+s["进行中"]+'</span><span class="lbl">进行中</span></div>'
+    +'<div class="stat wait"><span class="num">'+s["暂待"]+'</span><span class="lbl">暂待</span></div>'
+    +'<div class="stat done"><span class="num">'+s["已完结"]+'</span><span class="lbl">已完结</span></div>'
+    +'<div class="stat cancel"><span class="num">'+s["取消"]+'</span><span class="lbl">取消</span></div>'
+    +'<div class="stat overdue"><span class="num">'+s.overdue+'</span><span class="lbl">逾期</span></div>'
+    +'<div class="stat cost"><span class="num">'+s.cost.toFixed(1)+'</span><span class="lbl">降本年省(万)</span></div>'
+    +'<div class="stat"><span class="num">'+state.tasks.length+'</span><span class="lbl">总计</span></div>';
+  $("#statsBar").innerHTML=html;
+}
+
+function renderTimeline(){
+  var items=state.tasks.slice().sort(function(a,b){
+    return (b.updatedAt||"").localeCompare(a.updatedAt||"");
+  }).slice(0,20);
+  var html="";
+  if(!items.length){html='<div class="timeline-empty">暂无任务</div>';$("#timeline").innerHTML=html;return}
+  items.forEach(function(t){
+    var ln=lastNote(t);
+    var d=(t.updatedAt||"").slice(0,10);
+    html+='<div class="tl-item" data-jump="'+t.id+'" style="border-left-color:'+typeColor(t.type)+'">'
+      +'<div class="tl-date">'+formatDate(d)+'</div>'
+      +'<div class="tl-title">'+escapeHtml(truncate(t.title,22))+'</div>'
+      +'<div class="tl-note">'+escapeHtml(truncate(ln?ln.text:"",30))+'</div>'
+      +'</div>';
+  });
+  $("#timeline").innerHTML=html;
+}
+
+function renderKanban(){
+  var kanban=$("#kanban");
+  var html="";
+  STATUSES.forEach(function(st){
+    var key=STATUS_KEY[st];
+    var tasks=state.tasks.filter(taskMatchesFilters).filter(function(t){return t.status===st});
+    var collapsed=collapsedCols[st]?"collapsed":"";
+    html+='<div class="column col-'+key+' '+collapsed+'" data-status="'+st+'">'
+      +'<div class="col-head" data-toggle="'+st+'">'
+        +'<span class="col-title">'+st+'<span class="col-badge">'+tasks.length+'</span></span>'
+        +'<span class="col-toggle">'+(collapsedCols[st]?"▶":"▼")+'</span>'
+      +'</div>'
+      +'<div class="col-body" data-drop="'+st+'">';
+    if(!tasks.length){
+      html+='<div class="cards-empty">'+(filters.search||filters.type||filters.status?"无匹配":"拖拽卡片到此处")+'</div>';
+    }else{
+      tasks.forEach(function(t){html+=renderCard(t)});
+    }
+    html+='</div></div>';
+  });
+  kanban.innerHTML=html;
+}
+
+function renderCard(t){
+  var ln=lastNote(t);
+  var od=isOverdue(t);
+  var odDays=overdueDays(t);
+  var reqClass=od?' req':'';
+  var reqHtml=t.requiredAt?('<span class="tag'+reqClass+'">要求 '+formatDate(t.requiredAt)+(od?' ⚠':'')+'</span>'):'';
+  var costHtml=(t.costSaving&&t.costSaving.annualAmountWan)?('<span class="tag" style="color:#00936b">省'+t.costSaving.annualAmountWan+'万</span>'):'';
+  var noteHtml="";
+  if(ln){
+    var dt=ln.date?formatDate(ln.date)+" ":"";
+    noteHtml='<div class="card-note"><span class="note-date">'+escapeHtml(dt)+'</span>'+escapeHtml(truncate(ln.text,80))+'</div>';
+  }
+  return '<div class="card'+(od?" overdue":"")+'" draggable="true" data-id="'+t.id+'" style="border-left-color:'+typeColor(t.type)+'">'
+    +(od?'<span class="card-overdue-badge">逾期'+odDays+'天</span>':"")
+    +'<div class="card-title">'+escapeHtml(t.title)+'</div>'
+    +'<div class="card-meta"><span class="tag">'+escapeHtml(t.type)+'</span>'+reqHtml+costHtml+'</div>'
+    +noteHtml
+    +'</div>';
+}
+
+/* ============ 筛选 ============ */
+function taskMatchesFilters(t){
+  if(filters.status && t.status!==filters.status)return false;
+  if(filters.type && t.type!==filters.type)return false;
+  if(filters.search){
+    var q=filters.search.toLowerCase();
+    var inTitle=(t.title||"").toLowerCase().indexOf(q)>=0;
+    var inNotes=(t.notes||[]).some(function(n){return (n.text||"").toLowerCase().indexOf(q)>=0});
+    if(!inTitle&&!inNotes)return false;
+  }
+  return true;
+}
+function applyFilters(){renderKanban()}
+
+/* ============ 编辑 ============ */
+function openEditor(id){
+  editingId=id;
+  var t=id?findById(id):null;
+  $("#editTitle").textContent=t?"编辑任务":"新建任务";
+  $("#deleteBtn").style.display=t?"inline-block":"none";
+  var body=$("#editBody");
+  var isCost=(t&&t.type==="降本");
+  body.innerHTML=
+    '<div class="form-row"><label>事项标题 *</label><input id="f_title" value="'+escapeHtml(t?t.title:"")+'" placeholder="任务名称"></div>'
+    +'<div class="form-grid3">'
+      +'<div class="form-row"><label>类型</label><select id="f_type">'+TYPES.map(function(tp){return '<option value="'+tp+'"'+((t?t.type:"新品-日常")===tp?" selected":"")+'>'+tp+'</option>'}).join("")+'</select></div>'
+      +'<div class="form-row"><label>责任人</label><input id="f_owner" value="'+escapeHtml(t?t.owner:"周晓源")+'"></div>'
+      +'<div class="form-row"><label>状态</label><select id="f_status">'+STATUSES.map(function(st){return '<option value="'+st+'"'+((t?t.status:"进行中")===st?" selected":"")+'>'+st+'</option>'}).join("")+'</select></div>'
+    +'</div>'
+    +'<div class="form-grid2">'
+      +'<div class="form-row"><label>提出时间</label><input type="date" id="f_proposed" value="'+(t&&t.proposedAt?t.proposedAt:"")+'"></div>'
+      +'<div class="form-row"><label>要求完成时间</label><input type="date" id="f_required" value="'+(t&&t.requiredAt?t.requiredAt:"")+'"></div>'
+    +'</div>'
+    +'<div class="form-grid2 cost-row'+(isCost?" show":"")+'" id="costRow">'
+      +'<div class="form-row"><label>年省本(万)</label><input type="number" step="0.1" id="f_cost" value="'+(t&&t.costSaving&&t.costSaving.annualAmountWan?t.costSaving.annualAmountWan:"")+'" placeholder="如 7.4"></div>'
+      +'<div class="form-row"><label>降幅(%)</label><input type="number" step="0.1" id="f_reduce" value="'+(t&&t.costSaving&&t.costSaving.reductionPercent?t.costSaving.reductionPercent:"")+'" placeholder="如 3.7"></div>'
+    +'</div>'
+    +'<div class="notes-section">'
+      +'<h4>进度备注 '+(t&&t.notes.length?'<span style="color:#bbb;font-weight:400">('+t.notes.length+')</span>':"")+'</h4>'
+      +'<div class="notes-list" id="notesList">'+renderNotesList(t)+'</div>'
+      +'<div class="append-row">'
+        +'<input type="date" id="appendDate" value="'+todayISO()+'">'
+        +'<textarea id="appendText" placeholder="追加进度备注…"></textarea>'
+        +'<button class="btn btn-primary" id="appendBtn">追加</button>'
+      +'</div>'
+    +'</div>';
+  // 类型切换显示降本字段
+  $("#f_type").onchange=function(){$("#costRow").className="form-grid2 cost-row"+(this.value==="降本"?" show":"")};
+  $("#appendBtn").onclick=handleAppendNote;
+  showMask("#editModal");
+}
+
+function renderNotesList(t){
+  if(!t||!t.notes.length)return '<div class="notes-empty">暂无备注，在下方追加</div>';
+  return t.notes.map(function(n,i){
+    return '<div class="note-item"><div class="note-date-col">'+(n.date?formatDateFull(n.date):"无日期")+'</div><div class="note-text-col">'+escapeHtml(n.text)+'</div><button class="note-del" data-delnote="'+i+'">删除</button></div>';
+  }).join("");
+}
+
+function handleAppendNote(){
+  var d=$("#appendDate").value;
+  var txt=$("#appendText").value.trim();
+  if(!txt){showToast("请输入备注内容","error");return}
+  var t=editingId?findById(editingId):_draftTask();
+  if(!t.notes)t.notes=[];
+  t.notes.push({date:d||null,text:txt});
+  t.updatedAt=nowISO();
+  if(!editingId){_draft=t}
+  else{markDirty()}
+  $("#notesList").innerHTML=renderNotesList(t);
+  $("#appendText").value="";
+  // 不立即存入 state（新建时存草稿），保存时统一提交
+}
+
+var _draft=null;
+function _draftTask(){
+  if(_draft)return _draft;
+  _draft={id:genId(),type:"新品-日常",title:"",owner:"周晓源",proposedAt:null,requiredAt:null,status:"进行中",notes:[],costSaving:null,createdAt:nowISO(),updatedAt:nowISO()};
+  return _draft;
+}
+
+function saveTaskFromForm(){
+  var title=$("#f_title").value.trim();
+  if(!title){showToast("请填写事项标题","error");return}
+  var type=$("#f_type").value;
+  var owner=$("#f_owner").value.trim()||"周晓源";
+  var status=$("#f_status").value;
+  var proposed=$("#f_proposed").value||null;
+  var required=$("#f_required").value||null;
+  var cost=null;
+  if(type==="降本"){
+    var cval=parseFloat($("#f_cost").value);
+    var rval=parseFloat($("#f_reduce").value);
+    if(!isNaN(cval)||!isNaN(rval)){
+      cost={annualAmountWan:isNaN(cval)?null:cval,reductionPercent:isNaN(rval)?null:rval,rawText:null};
+    }
+  }
+  var t;
+  if(editingId){
+    t=findById(editingId);
+    t.title=title;t.type=type;t.owner=owner;t.status=status;
+    t.proposedAt=proposed;t.requiredAt=required;t.costSaving=cost;
+    t.updatedAt=nowISO();
+  }else{
+    t=_draft||_draftTask();
+    t.title=title;t.type=type;t.owner=owner;t.status=status;
+    t.proposedAt=proposed;t.requiredAt=required;t.costSaving=cost;
+    t.createdAt=t.createdAt||nowISO();t.updatedAt=nowISO();
+    state.tasks.push(t);
+  }
+  _draft=null;
+  markDirty();
+  hideMask("#editModal");
+  renderAll();
+  showToast("已保存，记得点「☁️ 同步」推送到 GitHub","success");
+}
+
+function deleteTask(id){
+  if(!confirm("确定删除此任务？此操作不可撤销（保存文件前可恢复）。"))return;
+  var idx=state.tasks.findIndex(function(t){return t.id===id});
+  if(idx>=0){state.tasks.splice(idx,1);markDirty();hideMask("#editModal");renderAll();showToast("已删除","success")}
+}
+
+function deleteNote(taskId,noteIdx){
+  var t=findById(taskId);
+  if(!t||!t.notes)return;
+  t.notes.splice(noteIdx,1);
+  t.updatedAt=nowISO();
+  if(editingId===taskId){$("#notesList").innerHTML=renderNotesList(t)}
+  markDirty();
+}
+
+function changeStatus(taskId,newStatus){
+  var t=findById(taskId);
+  if(!t||t.status===newStatus)return;
+  t.status=newStatus;t.updatedAt=nowISO();
+  markDirty();renderAll();
+}
+
+function findById(id){return state.tasks.find(function(t){return t.id===id})}
+
+/* ============ 拖拽 ============ */
+var dragId=null;
+function bindDragDrop(){
+  document.addEventListener("dragstart",function(e){
+    var card=e.target.closest(".card");
+    if(!card)return;
+    dragId=card.dataset.id;card.style.opacity=".4";
+  });
+  document.addEventListener("dragend",function(e){
+    var card=e.target.closest(".card");
+    if(card)card.style.opacity="";
+    $all(".col-body").forEach(function(c){c.classList.remove("drop-active")});
+  });
+  document.addEventListener("dragover",function(e){
+    var body=e.target.closest(".col-body");
+    if(body){e.preventDefault();body.classList.add("drop-active")}
+  });
+  document.addEventListener("dragleave",function(e){
+    var body=e.target.closest(".col-body");
+    if(body&&!body.contains(e.relatedTarget))body.classList.remove("drop-active");
+  });
+  document.addEventListener("drop",function(e){
+    var body=e.target.closest(".col-body");
+    if(!body||!dragId)return;
+    e.preventDefault();
+    body.classList.remove("drop-active");
+    var newStatus=body.dataset.drop;
+    changeStatus(dragId,newStatus);
+    dragId=null;
+  });
+}
+
+/* ============ 跳转高亮 ============ */
+function jumpTo(id){
+  var t=findById(id);
+  if(!t)return;
+  // 若该任务被筛选隐藏，先清空筛选
+  if(!taskMatchesFilters(t)){filters={search:"",type:"",status:""};$("#searchInput").value="";$("#typeFilter").value="";$("#statusFilter").value="";renderKanban()}
+  var card=document.querySelector('.card[data-id="'+id+'"]');
+  if(card){
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+    card.classList.add("flash");
+    setTimeout(function(){card.classList.remove("flash")},1700);
+  }
+}
+
+/* ============ 汇总 ============ */
+function openSummary(){
+  var end=todayISO();
+  var start=end.slice(0,8)+"01";
+  $("#summaryBody").innerHTML=
+    '<div class="summary-controls">'
+      +'<label>开始 <input type="date" id="sumStart" value="'+start+'"></label>'
+      +'<label>结束 <input type="date" id="sumEnd" value="'+end+'"></label>'
+      +'<button class="btn btn-primary" id="sumQuery">查询</button>'
+    +'</div>'
+    +'<div id="sumResult"></div>';
+  $("#sumQuery").onclick=runSummary;
+  runSummary();
+  showMask("#summaryModal");
+}
+function runSummary(){
+  var s=parseDateNum($("#sumStart").value);
+  var e=parseDateNum($("#sumEnd").value);
+  if(!s||!e){$("#sumResult").innerHTML='<p style="color:#999">请选择时间段</p>';return}
+  var added=[],finished=[],notes=[];
+  var cost=0;
+  state.tasks.forEach(function(t){
+    if(parseDateNum(t.proposedAt)>=s&&parseDateNum(t.proposedAt)<=e)added.push(t);
+    if(t.status==="已完结"){
+      var ld=lastNoteDate(t);
+      if(ld&&parseDateNum(ld)>=s&&parseDateNum(ld)<=e){
+        finished.push(t);
+        if(t.costSaving&&t.costSaving.annualAmountWan)cost+=t.costSaving.annualAmountWan;
+      }
+    }
+    (t.notes||[]).forEach(function(n){
+      if(n.date&&parseDateNum(n.date)>=s&&parseDateNum(n.date)<=e)notes.push({task:t,note:n});
+    });
+  });
+  var html='<div class="summary-totals">'
+    +'<div class="summary-total"><div class="n">'+added.length+'</div><div class="t">时段新增任务</div></div>'
+    +'<div class="summary-total"><div class="n">'+finished.length+'</div><div class="t">时段完结任务</div></div>'
+    +'<div class="summary-total"><div class="n">'+notes.length+'</div><div class="t">时段追加备注</div></div>'
+    +'<div class="summary-total cost"><div class="n">'+cost.toFixed(1)+'</div><div class="t">时段完结降本(万)</div></div>'
+    +'</div>';
+  html+='<div class="summary-group"><h5>新增任务 ('+added.length+')</h5>';
+  html+=added.length?added.map(function(t){return '<div class="summary-item"><span class="si-title">'+escapeHtml(t.title)+'</span><span class="si-date">'+formatDate(t.proposedAt)+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  html+='<div class="summary-group"><h5>完结任务 ('+finished.length+')</h5>';
+  html+=finished.length?finished.map(function(t){return '<div class="summary-item"><span class="si-title">'+escapeHtml(t.title)+'</span><span class="si-date">'+formatDate(lastNoteDate(t))+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  html+='<div class="summary-group"><h5>进度备注 ('+notes.length+')</h5>';
+  notes.sort(function(a,b){return parseDateNum(a.note.date)-parseDateNum(b.note.date)});
+  html+=notes.length?notes.map(function(it){return '<div class="summary-item"><span class="si-title">['+escapeHtml(truncate(it.task.title,18))+'] '+escapeHtml(truncate(it.note.text,50))+'</span><span class="si-date">'+formatDate(it.note.date)+'</span></div>'}).join(""):'<div style="color:#999;font-size:12px">无</div>';
+  html+='</div>';
+  $("#sumResult").innerHTML=html;
+}
+
+/* ============ CSV 导入 ============ */
+function parseCSV(text){
+  var rows=[],row=[],field="",inQ=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(inQ){
+      if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else inQ=false}
+      else field+=c;
+    }else{
+      if(c==='"')inQ=true;
+      else if(c===","){row.push(field);field=""}
+      else if(c==="\n"){row.push(field);rows.push(row);row=[];field=""}
+      else if(c==="\r"){}
+      else field+=c;
+    }
+  }
+  if(field||row.length){row.push(field);rows.push(row)}
+  return rows;
+}
+function csvToDate(raw){
+  if(!raw)return null;var s=String(raw).trim();if(!s||s.charAt(0)==="=")return null;
+  var m=s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);if(m)return m[1]+"-"+pad2(m[2])+"-"+pad2(m[3]);
+  m=s.match(/^(\d{1,2})月(\d{1,2})日/);if(m)return "2026-"+pad2(m[1])+"-"+pad2(m[2]);
+  return null;
+}
+function csvParseNotes(txt){
+  if(!txt)return[];
+  var lines=txt.split(/\r?\n/),notes=[],cur=null;
+  lines.forEach(function(line){
+    var m=line.match(/^(\d{4})\s*(.*)$/);
+    var isDate=false,d=null;
+    if(m){var mm=parseInt(m[1].slice(0,2)),dd=parseInt(m[1].slice(2,4));if(mm>=1&&mm<=12&&dd>=1&&dd<=31){d="2026-"+pad2(mm)+"-"+pad2(dd);isDate=true}}
+    if(isDate){if(cur)notes.push(cur);cur={date:d,text:m[2]}}
+    else{if(cur)cur.text+=(cur.text?"\n":"")+line;else if(line.trim())cur={date:null,text:line}}
+  });
+  if(cur)notes.push(cur);
+  return notes;
+}
+function handleCSVImport(file){
+  var reader=new FileReader();
+  reader.onload=function(){
+    var rows=parseCSV(reader.result);
+    var imported=0;
+    for(var i=1;i<rows.length;i++){
+      var r=rows[i];while(r.length<8)r.push("");
+      var type=(r[1]||"").trim(),title=(r[2]||"").trim();
+      if(!type&&!title)continue;
+      var proposed=csvToDate(r[4]),required=csvToDate(r[5]);
+      var st=(r[7]||"").trim();
+      var status=st==="完结"?"已完结":st==="暂待"?"暂待":st==="取消"?"取消":"进行中";
+      var notes=csvParseNotes(r[6]||"");
+      var upd=notes.length&&notes[notes.length-1].date?notes[notes.length-1].date:proposed;
+      state.tasks.push({id:genId(),type:type,title:title,owner:(r[3]||"").trim()||"周晓源",proposedAt:proposed,requiredAt:required,status:status,notes:notes,costSaving:null,createdAt:proposed?proposed+"T00:00:00.000Z":nowISO(),updatedAt:upd?upd+"T00:00:00.000Z":nowISO()});
+      imported++;
+    }
+    markDirty();renderAll();
+    showToast("已导入 "+imported+" 条任务，记得保存","success");
+  };
+  reader.readAsText(file,"utf-8");
+}
+
+/* ============ 弹窗控制 ============ */
+function showMask(sel){$(sel).classList.remove("hidden")}
+function hideMask(sel){$(sel).classList.add("hidden")}
+
+/* ============ 事件绑定 ============ */
+function bindEvents(){
+  // 卡片点击 / 列折叠 / 删除备注（委托）
+  $("#kanban").addEventListener("click",function(e){
+    var toggle=e.target.closest("[data-toggle]");
+    if(toggle){var st=toggle.dataset.toggle;collapsedCols[st]=!collapsedCols[st];renderKanban();return}
+    var card=e.target.closest(".card");
+    if(card)openEditor(card.dataset.id);
+  });
+  // 时间线跳转
+  $("#timeline").addEventListener("click",function(e){
+    var it=e.target.closest("[data-jump]");if(it)jumpTo(it.dataset.jump);
+  });
+  // 备注删除（弹窗内）
+  $("#editBody").addEventListener("click",function(e){
+    var b=e.target.closest("[data-delnote]");
+    if(!b)return;
+    var idx=parseInt(b.dataset.delnote);
+    if(editingId){deleteNote(editingId,idx)}
+    else if(_draft&&_draft.notes){_draft.notes.splice(idx,1);$("#notesList").innerHTML=renderNotesList(_draft)}
+  });
+  // 搜索
+  var st;
+  $("#searchInput").addEventListener("input",function(){clearTimeout(st);st=setTimeout(function(){filters.search=$("#searchInput").value.trim();applyFilters()},200)});
+  $("#typeFilter").addEventListener("change",function(){filters.type=this.value;applyFilters()});
+  $("#statusFilter").addEventListener("change",function(){filters.status=this.value;applyFilters()});
+  $("#clearFilterBtn").onclick=function(){filters={search:"",type:"",status:""};$("#searchInput").value="";$("#typeFilter").value="";$("#statusFilter").value="";applyFilters()};
+  // 按钮
+  $("#newBtn").onclick=function(){_draft=null;openEditor(null)};
+  $("#saveTaskBtn").onclick=saveTaskFromForm;
+  $("#deleteBtn").onclick=function(){if(editingId)deleteTask(editingId)};
+  $("#syncBtn").onclick=syncToGitHub;
+  $("#settingsBtn").onclick=openGhSettings;
+  $("#ghSaveBtn").onclick=saveGhSettingsFromForm;
+  $("#summaryBtn").onclick=openSummary;
+  $("#importBtn").onclick=function(){$("#csvFile").click()};
+  $("#csvFile").onchange=function(){if(this.files[0]){handleCSVImport(this.files[0]);this.value=""}};
+  $("#printBtn").onclick=function(){window.print()};
+  // 关闭弹窗
+  $all("[data-close]").forEach(function(el){el.onclick=function(){el.closest(".modal-mask").classList.add("hidden");_draft=null}});
+  $all(".modal-mask").forEach(function(m){m.addEventListener("click",function(e){if(e.target===m){m.classList.add("hidden");_draft=null}})});
+  // 关闭前提醒
+  window.addEventListener("beforeunload",function(e){if(isDirty){e.preventDefault();e.returnValue="";return""}});
+  // 键盘 ESC 关弹窗
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"){$all(".modal-mask:not(.hidden)").forEach(function(m){m.classList.add("hidden");_draft=null})}});
+}
+
+/* ============ 初始化 ============ */
+function init(){
+  state=loadDataFromFile();
+  // 填充类型筛选（先清空防止重复）
+  var tf=$("#typeFilter");
+  tf.innerHTML='<option value="">全部类型</option>';
+  TYPES.forEach(function(tp){var o=document.createElement("option");o.value=tp;o.textContent=tp;tf.appendChild(o)});
+  bindEvents();
+  bindDragDrop();
+  checkBufferOnLoad();
+  renderAll();
+  updateDirtyUI();
+  updateSyncStatus();
+  updateLastSyncTime();
+  setTimeout(checkRemoteVersion,2000);
+  // 工具栏 sticky top 跟随统计区实际高度
+  var sb=$("#statsBar");
+  if(sb)$("#toolbar").style.top=sb.offsetHeight+"px";
+  window.addEventListener("resize",function(){var sb2=$("#statsBar");if(sb2)$("#toolbar").style.top=sb2.offsetHeight+"px"});
+}
+init();
+})();
 </script>
 
 <!-- ===== 应用脚本 ===== -->
