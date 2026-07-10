@@ -61,13 +61,13 @@ input,select,textarea{font-family:inherit;font-size:14px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* ===== 时间线 ===== */
-.timeline-wrap{padding:8px 16px;background:#eef2f7;border-bottom:1px solid var(--border)}
-.timeline-label{font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600}
-.timeline{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
-.tl-item{flex:0 0 auto;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--doing);border-radius:6px;padding:5px 10px;max-width:240px;cursor:pointer;transition:.15s}
+.timeline-wrap{padding:10px 16px;background:#eef2f7;border-bottom:1px solid var(--border)}
+.timeline-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.timeline{display:flex;gap:8px;overflow-x:auto;overflow-y:visible;padding-bottom:6px;align-items:flex-start}
+.tl-item{flex:0 0 auto;min-height:62px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--doing);border-radius:6px;padding:6px 12px;max-width:240px;cursor:pointer;transition:.15s}
 .tl-item:hover{box-shadow:var(--shadow2);transform:translateY(-1px)}
-.tl-item .tl-date{font-size:11px;color:var(--text2);font-weight:600}
-.tl-item .tl-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-item .tl-date{font-size:11px;color:var(--text2);font-weight:600;margin-bottom:2px}
+.tl-item .tl-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
 .tl-item .tl-note{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .timeline-empty{font-size:12px;color:var(--text2);padding:8px 0}
 
